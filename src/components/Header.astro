@@ -26,7 +26,6 @@ const nav = [
         </a>
       ))
     }
-    <a href={`mailto:${site.email}`} class="header__cta">Enquire</a>
   </nav>
 </header>
 
@@ -72,18 +71,7 @@ const nav = [
   }
   .header__nav {
     display: flex;
-    align-items: center;
     gap: clamp(14px, 3vw, 40px);
-  }
-  .header__cta {
-    padding: 7px 14px;
-    border: 1px solid currentColor;
-    border-radius: 999px;
-    transition: background-color 0.3s, color 0.3s;
-  }
-  .header__cta:hover {
-    background: #fff;
-    color: #000;
   }
   .header__idx {
     opacity: 0.5;
@@ -94,8 +82,8 @@ const nav = [
   }
   @media (max-width: 560px) {
     .header__name,
-    .header__idx,
-    .header__cta {
+    .header__idx {
       display: none;
     }
-  }</style>
+  }
+</style>

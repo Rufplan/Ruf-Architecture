@@ -1,32 +1,37 @@
 ---
-// Pinned, scroll-scrubbed intro for a project: the abstract massing rises from an empty site,
-// separates floor by floor, reassembles, then dissolves into the real photograph.
-import { Picture } from 'astro:assets';
+// Pinned, scroll-scrubbed intro: the project's own photograph is built up from the ground in 3D,
+// slab by slab, while the camera swings from an oblique site view to square-on.
+import { Picture, getImage } from 'astro:assets';
 import type { Media } from '../lib/images';
 
 interface Props {
-  title: string;
-  num: string;
-  typology: string;
-  years: string;
-  location: string;
-  form: string;
-  seed: number;
   cover: Extract<Media, { kind: 'image' }>;
+  /** Large heading over the image (the project title, or the studio name on the home page). */
+  heading: string;
+  kicker?: string;
+  tagLeft?: string;
+  tagRight?: string;
+  alt: string;
+  /** Home page variant: larger heading and a shorter scroll. */
+  home?: boolean;
 }
-const { title, num, typology, years, location, form, seed, cover } = Astro.props;
-const stages = ['Site', 'Structure', 'Massing', 'Built'];
+const { cover, heading, kicker, tagLeft, tagRight, alt, home = false } = Astro.props;
+const texture = await getImage({ src: cover.src, width: Math.min(2048, cover.src.width), format: 'webp' });
+const stages = ['Site', 'Structure', 'Enclosure', 'Complete'];
 ---
 
-<section class="seq" data-sequence data-form={form} data-seed={seed} data-stages={JSON.stringify(stages)}>
+<section
+  class:list={['seq dark', home && 'seq--home']}
+  data-sequence
+  data-texture={texture.src}
+  data-ratio={cover.ratio.toFixed(4)}
+>
   <div class="seq__sticky">
     <div class="seq__frame">
-      <div class="seq__scene" data-scene></div>
-
       <div class="seq__photo" data-photo>
         <Picture
           src={cover.src}
-          alt={title}
+          alt={alt}
           formats={['avif', 'webp']}
           widths={[800, 1280, 1920, 2560].filter((w) => w <= cover.src.width).concat(cover.src.width < 2560 ? [cover.src.width] : [])}
           sizes={`(orientation: portrait) ${Math.round(cover.ratio * 110)}vh, 100vw`}
@@ -34,16 +39,15 @@ const stages = ['Site', 'Structure', 'Massing', 'Built'];
           fetchpriority="high"
         />
       </div>
+      <div class="seq__scene" data-scene data-cursor="Drag"></div>
       <div class="seq__shade" data-shade aria-hidden="true"></div>
 
-      <span class="seq__tag seq__tag--tl mono">No. {num} — {location}</span>
-      <span class="seq__tag seq__tag--tr mono">{typology} · {years}</span>
-
-      <p class="seq__word serif" aria-hidden="true"><span data-word>site</span></p>
+      {tagLeft && <span class="seq__tag seq__tag--tl mono">{tagLeft}</span>}
+      {tagRight && <span class="seq__tag seq__tag--tr mono">{tagRight}</span>}
 
       <div class="seq__title">
-        <p class="mono seq__kicker">No. {num} / {typology}</p>
-        <h1 class="seq__name">{title}</h1>
+        {kicker && <p class="mono seq__kicker">{kicker}</p>}
+        <h1 class="seq__name">{heading}</h1>
       </div>
 
       <div class="seq__steps mono" aria-hidden="true">
@@ -61,72 +65,37 @@ const stages = ['Site', 'Structure', 'Massing', 'Built'];
 </section>
 
 <script>
-  import { mountMassing, reducedMotion, type Form } from '../scripts/massing';
+  import { mountAssembly, reducedMotion, stageAt } from '../scripts/assemble';
 
-  const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
-  const range = (p: number, start: number, end: number) => clamp((p - start) / (end - start));
+  const clamp = (v: number) => Math.min(1, Math.max(0, v));
+  const range = (p: number, a: number, b: number) => clamp((p - a) / (b - a));
 
   for (const seq of document.querySelectorAll<HTMLElement>('[data-sequence]')) {
-    const scene = seq.querySelector<HTMLElement>('[data-scene]')!;
-    const photo = seq.querySelector<HTMLElement>('[data-photo]')!;
-    const shade = seq.querySelector<HTMLElement>('[data-shade]')!;
-    const word = seq.querySelector<HTMLElement>('[data-word]')!;
-    const bar = seq.querySelector<HTMLElement>('[data-bar]')!;
-    const steps = [...seq.querySelectorAll<HTMLElement>('[data-step]')];
-    const stages: string[] = JSON.parse(seq.dataset.stages!);
-
     if (reducedMotion()) {
       seq.classList.add('is-static');
       continue;
     }
+    const scene = seq.querySelector<HTMLElement>('[data-scene]')!;
+    const photo = seq.querySelector<HTMLElement>('[data-photo]')!;
+    const shade = seq.querySelector<HTMLElement>('[data-shade]')!;
+    const bar = seq.querySelector<HTMLElement>('[data-bar]')!;
+    const steps = [...seq.querySelectorAll<HTMLElement>('[data-step]')];
 
-    let p = 0;
-    const read = () => {
-      const r = seq.getBoundingClientRect();
-      p = clamp(-r.top / Math.max(1, r.height - innerHeight));
-    };
-
-    let current = -1;
-    const apply = () => {
-      // 0 site → 0.12–0.46 structure rises → 0.46–0.7 floors separate and return → 0.7–0.9 photo resolves
-      const stage = p < 0.12 ? 0 : p < 0.46 ? 1 : p < 0.7 ? 2 : 3;
-      if (stage !== current) {
-        current = stage;
-        word.classList.remove('is-in');
-        void word.offsetWidth;
-        word.textContent = stages[stage].toLowerCase();
-        word.classList.add('is-in');
-        steps.forEach((s, i) => s.classList.toggle('is-on', i <= stage));
-      }
-      const q = range(p, 0.7, 0.9);
-      photo.style.opacity = String(q);
-      photo.style.filter = `blur(${((1 - q) * 28).toFixed(1)}px) grayscale(${(1 - range(p, 0.86, 1)).toFixed(3)})`;
-      photo.style.transform = `scale(${(1.14 - 0.14 * q).toFixed(4)})`;
-      const reach = q * 140;
-      photo.style.setProperty('--reach', `${reach}%`);
-      shade.style.opacity = String(range(p, 0.8, 0.95));
-      scene.style.opacity = String(1 - range(p, 0.8, 0.92));
-      seq.style.setProperty('--p', p.toFixed(4));
-      seq.classList.toggle('is-built', p > 0.8);
-      bar.style.transform = `scaleX(${p})`;
-    };
-
-    const { stage } = mountMassing(scene, {
-      form: seq.dataset.form as Form,
-      seed: Number(seq.dataset.seed),
-      palette: { fg: 0x050505, bg: 0xf3f3f0 },
-      zoom: 0.92,
-      onTick: (s) => {
-        s.build = range(p, 0.12, 0.46);
-        s.explodeTarget = Math.sin(range(p, 0.46, 0.7) * Math.PI) * 0.7;
-      },
-    });
-    stage.spinSpeed = 0.08;
-    stage.build = 0;
+    const assembly = mountAssembly(scene, { src: seq.dataset.texture!, ratio: Number(seq.dataset.ratio) });
 
     const onScroll = () => {
-      read();
-      apply();
+      const r = seq.getBoundingClientRect();
+      const p = clamp(-r.top / Math.max(1, r.height - innerHeight));
+      assembly.setProgress(p);
+      const stage = stageAt(p);
+      steps.forEach((s, i) => s.classList.toggle('is-on', i <= stage));
+      // Hand over to the sharp HTML image once the camera is square-on.
+      const done = range(p, 0.93, 0.99);
+      photo.style.opacity = String(done);
+      scene.style.opacity = String(1 - done);
+      scene.style.pointerEvents = done > 0.5 ? 'none' : '';
+      shade.style.opacity = String(range(p, 0.6, 0.95));
+      bar.style.transform = `scaleX(${p})`;
     };
     addEventListener('scroll', onScroll, { passive: true });
     addEventListener('resize', onScroll);
@@ -137,37 +106,32 @@ const stages = ['Site', 'Structure', 'Massing', 'Built'];
 <style>
   .seq {
     position: relative;
-    height: 400vh;
-    background: var(--white);
-    color: var(--black);
-    --p: 0;
+    height: 380vh;
+  }
+  .seq--home {
+    height: 300vh;
   }
   .seq__sticky {
     position: sticky;
     top: 0;
     height: 100vh;
     height: 100svh;
-    padding: 64px 12px 12px;
   }
   .seq__frame {
     position: relative;
     height: 100%;
     overflow: hidden;
-    background: var(--white);
-    outline: 1px solid var(--line-light);
   }
-  .seq__scene {
-    position: absolute;
-    inset: 0;
-  }
+  .seq__scene,
   .seq__photo {
     position: absolute;
     inset: 0;
+  }
+  .seq__scene {
+    touch-action: pan-y;
+  }
+  .seq__photo {
     opacity: 0;
-    --reach: 0%;
-    -webkit-mask-image: radial-gradient(ellipse at 50% 60%, #000 var(--reach), transparent calc(var(--reach) + 30%));
-    mask-image: radial-gradient(ellipse at 50% 60%, #000 var(--reach), transparent calc(var(--reach) + 30%));
-    will-change: opacity, filter, transform;
   }
   .seq__photo :global(picture),
   .seq__photo :global(img) {
@@ -180,67 +144,33 @@ const stages = ['Site', 'Structure', 'Massing', 'Built'];
     position: absolute;
     inset: 0;
     opacity: 0;
-    background: linear-gradient(to top, rgba(5, 5, 5, 0.8) 0%, rgba(5, 5, 5, 0) 45%);
+    background:
+      linear-gradient(to top, rgba(5, 5, 5, 0.85) 0%, rgba(5, 5, 5, 0) 45%),
+      linear-gradient(to bottom, rgba(5, 5, 5, 0.5) 0%, rgba(5, 5, 5, 0) 20%);
     pointer-events: none;
   }
-
-  /* Small white label boxes pinned to the frame corners */
   .seq__tag {
     position: absolute;
     z-index: 2;
-    padding: 7px 10px;
-    background: var(--white);
-    color: var(--black);
-    font-size: 10px;
+    top: 76px;
+    color: var(--white);
   }
   .seq__tag--tl {
-    top: 0;
-    left: 0;
+    left: var(--gutter);
   }
   .seq__tag--tr {
-    top: 0;
-    right: 0;
+    right: var(--gutter);
   }
-
-  .seq__word {
-    position: absolute;
-    z-index: 2;
-    top: 50%;
-    right: clamp(16px, 4vw, 64px);
-    margin: 0;
-    translate: 0 -50%;
-    font-size: clamp(64px, 11vw, 200px);
-    line-height: 1;
-    color: var(--black);
-    transition: color 0.6s var(--ease);
-    pointer-events: none;
-  }
-  .seq__word span {
-    display: inline-block;
-  }
-  .seq__word span.is-in {
-    animation: word-in 0.9s var(--ease) both;
-  }
-  @keyframes word-in {
-    from {
-      opacity: 0;
-      transform: translateY(0.35em);
-      filter: blur(8px);
-    }
-  }
-
   .seq__title {
     position: absolute;
     z-index: 2;
-    left: clamp(14px, 2vw, 28px);
-    right: clamp(14px, 2vw, 28px);
-    bottom: clamp(40px, 5vw, 64px);
-    color: var(--black);
-    transition: color 0.6s var(--ease);
+    left: var(--gutter);
+    right: var(--gutter);
+    bottom: clamp(52px, 6vw, 80px);
     pointer-events: none;
   }
   .seq__kicker {
-    margin: 0 0 10px;
+    margin: 0 0 12px;
   }
   .seq__name {
     margin: 0 0 0 -0.04em;
@@ -250,19 +180,20 @@ const stages = ['Site', 'Structure', 'Massing', 'Built'];
     letter-spacing: -0.065em;
     text-wrap: balance;
   }
-
+  .seq--home .seq__name {
+    font-size: clamp(120px, 31vw, 560px);
+    line-height: 0.74;
+    letter-spacing: -0.075em;
+  }
   .seq__steps {
     position: absolute;
     z-index: 2;
-    left: clamp(14px, 2vw, 28px);
-    right: clamp(14px, 2vw, 28px);
-    bottom: 14px;
+    left: var(--gutter);
+    right: var(--gutter);
+    bottom: 18px;
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    color: var(--black);
-    transition: color 0.6s var(--ease);
-    font-size: 10px;
   }
   .seq__steps span {
     opacity: 0.35;
@@ -278,59 +209,38 @@ const stages = ['Site', 'Structure', 'Massing', 'Built'];
     right: 0;
     bottom: 0;
     height: 2px;
-    background: rgba(128, 128, 128, 0.25);
+    background: var(--line-dark);
   }
   .seq__bar span {
     display: block;
     height: 100%;
-    background: var(--black);
-    transition: background-color 0.6s var(--ease);
+    background: var(--white);
     transform-origin: left;
     transform: scaleX(0);
   }
 
-  .seq.is-built .seq__word,
-  .seq.is-built .seq__title,
-  .seq.is-built .seq__steps {
-    color: var(--white);
-  }
-  .seq.is-built .seq__bar span {
-    background: var(--white);
-  }
-
   /* Reduced motion: just the photograph */
   .seq.is-static {
-    height: auto;
-  }
-  .seq.is-static .seq__sticky {
-    position: relative;
+    height: 100vh;
   }
   .seq.is-static .seq__photo,
   .seq.is-static .seq__shade {
     opacity: 1;
-    -webkit-mask-image: none;
-    mask-image: none;
   }
-  .seq.is-static .seq__word,
-  .seq.is-static .seq__steps {
+  .seq.is-static .seq__steps,
+  .seq.is-static .seq__bar {
     display: none;
-  }
-  .seq.is-static .seq__title {
-    color: var(--white);
   }
 
   @media (max-width: 760px) {
     .seq {
-      height: 320vh;
-    }
-    .seq__sticky {
-      padding: 64px 8px 8px;
+      height: 300vh;
     }
     .seq__tag--tr {
       display: none;
     }
-    .seq__word {
-      top: 30%;
+    .seq__steps {
+      font-size: 9px;
     }
   }
 </style>

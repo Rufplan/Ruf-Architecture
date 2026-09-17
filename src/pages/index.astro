@@ -6,48 +6,33 @@ import ImageReel from '../components/ImageReel.astro';
 import { site } from '../site.config';
 import { Picture } from 'astro:assets';
 import { portrait } from '../lib/images';
-import { getProjects } from '../lib/projects';
+import { getProjects, coverOf } from '../lib/projects';
+import BuildSequence from '../components/BuildSequence.astro';
 
 const portraitImg = portrait();
 const allProjects = await getProjects();
 const projects = allProjects.filter((p) => p.data.featured);
+// Hero: the first featured project with photography, built up from the ground.
+const heroProject = projects.find((p) => coverOf(p)) ?? allProjects.find((p) => coverOf(p));
+const heroCover = heroProject && coverOf(heroProject);
 const statement =
   'We design buildings as instruments of light and shadow — reducing every project to the essential: mass, line, and the space between.';
 ---
 
 <Base>
-  <!-- HERO: sticky Three.js massing that explodes floor by floor as you scroll -->
-  <section class="hero dark" data-hero>
-    <div class="hero__sticky">
-      <div class="hero__scene" data-hero-scene></div>
-
-      <div class="hero__top wrap mono">
-        <span>{site.name}</span>
-        <span class="hero__rule" aria-hidden="true"></span>
-        <span>{site.principal}, {site.principalTitle}</span>
-      </div>
-
-      <div class="hero__readout wrap mono" aria-hidden="true">
-        <span>View / Axonometric</span>
-        <span>Rot <b data-angle>045.0</b>°</span>
-        <span>Explode <b data-explode>0.00</b></span>
-        <span>Levels <b data-levels>—</b></span>
-      </div>
-
-      <h1 class="hero__title wrap">
-        <span class="visually-hidden">{site.name} — {site.principal}, {site.principalTitle}</span>
-        <span class="hero__word" aria-hidden="true">
-          <span class="mask"><span>{site.short}</span></span>
-        </span>
-        <span class="hero__side" aria-hidden="true">
-          <span class="mask"><span class="serif hero__serif">Architecture</span></span>
-          <span class="mask"><span class="hero__tag">{site.tagline}</span></span>
-        </span>
-      </h1>
-
-      <p class="hero__scroll mono" aria-hidden="true"><span></span>Scroll</p>
-    </div>
-  </section>
+  {
+    heroProject && heroCover && (
+      <BuildSequence
+        home
+        cover={heroCover}
+        alt={`${heroProject.data.title}, ${heroProject.data.location}`}
+        heading={site.short}
+        kicker={`${site.name} — ${site.principal}, ${site.principalTitle}`}
+        tagLeft={site.tagline}
+        tagRight={`Shown: ${heroProject.data.title}`}
+      />
+    )
+  }
 
   <!-- STATEMENT -->
   <section class="statement light" data-statement>
@@ -72,7 +57,7 @@ const statement =
       <p class="mono">( 02 — Selected work )</p>
       <h2 class="work__title">
         <span class="mask"><span>Selected</span></span>
-        <span class="mask"><span><em class="serif">Work</em> <sup class="mono">({String(projects.length).padStart(2, '0')})</sup></span></span>
+        <span class="mask"><span><em>Work</em> <sup class="mono">({String(projects.length).padStart(2, '0')})</sup></span></span>
       </h2>
     </div>
     <WorkList projects={projects} />
@@ -110,32 +95,6 @@ const statement =
 </Base>
 
 <script>
-  import { mountMassing } from '../scripts/massing';
-
-  const hero = document.querySelector<HTMLElement>('[data-hero]');
-  const container = document.querySelector<HTMLElement>('[data-hero-scene]');
-  if (hero && container) {
-    const angle = hero.querySelector<HTMLElement>('[data-angle]')!;
-    const explode = hero.querySelector<HTMLElement>('[data-explode]')!;
-    const levels = hero.querySelector<HTMLElement>('[data-levels]')!;
-    const { stage } = mountMassing(container, {
-      form: 'cluster',
-      seed: 21,
-      palette: { fg: 0xf3f3f0, bg: 0x050505 },
-      build: true,
-      scrollExplode: hero,
-      maxExplode: 1.1,
-      zoom: 1.05,
-      onTick: (stage) => {
-        const deg = (((stage.group.rotation.y * 180) / Math.PI) % 360 + 360) % 360;
-        angle.textContent = deg.toFixed(1).padStart(5, '0');
-        explode.textContent = stage.explode.toFixed(2);
-        hero.style.setProperty('--p', String(Math.min(1, stage.explodeTarget / 1.1)));
-      },
-    });
-    levels.textContent = String(stage.levels);
-  }
-
   // Statement words light up as the section scrolls past.
   const statement = document.querySelector<HTMLElement>('[data-statement]');
   if (statement) {
@@ -152,145 +111,6 @@ const statement =
 </script>
 
 <style>
-  /* HERO */
-  .hero {
-    position: relative;
-    height: 240vh;
-    --p: 0;
-  }
-  .hero__sticky {
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    height: 100svh;
-    overflow: hidden;
-  }
-  .hero__scene {
-    position: absolute;
-    inset: 0;
-  }
-  .hero__top {
-    position: absolute;
-    top: 76px;
-    left: 0;
-    right: 0;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    color: var(--grey);
-  }
-  .hero__rule {
-    flex: 1;
-    height: 1px;
-    background: var(--line-dark);
-  }
-  .hero__readout {
-    position: absolute;
-    top: 110px;
-    right: 0;
-    display: grid;
-    gap: 2px;
-    text-align: right;
-    color: var(--grey);
-  }
-  .hero__readout b {
-    color: var(--white);
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-  }
-  .hero__title {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    margin: 0;
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 24px;
-    pointer-events: none;
-    transform: translateY(calc(var(--p) * -12vh));
-    opacity: calc(1 - var(--p) * 0.85);
-    mix-blend-mode: difference;
-  }
-  .hero__word {
-    font-weight: 900;
-    font-size: clamp(120px, 31vw, 560px);
-    line-height: 0.74;
-    letter-spacing: -0.075em;
-    margin-left: -0.04em;
-    margin-bottom: -0.02em;
-  }
-  .hero__side {
-    display: grid;
-    gap: 14px;
-    max-width: 360px;
-    padding-bottom: clamp(14px, 3vw, 44px);
-    text-align: right;
-    font-weight: 300;
-    font-size: clamp(24px, 3.2vw, 52px);
-    letter-spacing: -0.03em;
-    line-height: 1;
-  }
-  .hero__serif {
-    font-size: 1.35em;
-    line-height: 1;
-  }
-  .hero__tag {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    line-height: 1.5;
-    color: var(--grey);
-  }
-  .is-ready .hero .mask > span {
-    transform: none;
-    transition-delay: 0.35s;
-  }
-  .is-ready .hero__side .mask:nth-child(2) > span {
-    transition-delay: 0.55s;
-  }
-  .hero__scroll {
-    position: absolute;
-    left: 50%;
-    bottom: 22px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    translate: -50% 0;
-    color: var(--grey);
-    opacity: calc(1 - var(--p) * 4);
-  }
-  .hero__scroll span {
-    width: 1px;
-    height: 34px;
-    background: linear-gradient(var(--white) 50%, transparent 50%) 0 0 / 1px 200%;
-    animation: drip 1.6s var(--ease) infinite;
-  }
-  @keyframes drip {
-    from { background-position: 0 100%; }
-    to { background-position: 0 -100%; }
-  }
-  @media (max-width: 760px) {
-    .hero__title {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0;
-    }
-    .hero__side {
-      order: -1;
-      text-align: left;
-    }
-    .hero__word {
-      font-size: 44vw;
-      margin-bottom: 0.02em;
-    }
-    .hero__readout {
-      top: 104px;
-    }
-  }
-
   /* STATEMENT */
   .statement {
     padding-block: clamp(110px, 18vw, 260px);
@@ -342,7 +162,8 @@ const statement =
     text-align: right;
   }
   .work__title em {
-    font-size: 1.1em;
+    font-style: normal;
+    font-weight: 300;
   }
   .work__title sup {
     vertical-align: top;

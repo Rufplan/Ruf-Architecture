@@ -21,12 +21,11 @@ const details = [
 
 <Base title="Studio" description={site.bio[0]}>
   <section class="s-hero dark">
-    <div class="s-hero__scene" data-scene></div>
     <div class="wrap s-hero__inner">
       <p class="mono s-hero__kicker">( Studio )</p>
       <h1 class="s-hero__title">
         <span class="mask"><span>Less,</span></span>
-        <span class="mask"><span><em class="serif">but</em> heavier.</span></span>
+        <span class="mask"><span><em>but</em> heavier.</span></span>
       </h1>
     </div>
   </section>
@@ -130,19 +129,6 @@ const details = [
   </section>
 </Base>
 
-<script>
-  import { mountMassing } from '../scripts/massing';
-  const el = document.querySelector<HTMLElement>('.s-hero [data-scene]');
-  if (el) {
-    mountMassing(el, {
-      form: 'slab',
-      seed: 8,
-      palette: { fg: 0xf3f3f0, bg: 0x050505 },
-      build: true,
-      zoom: 0.8,
-    });
-  }
-</script>
 
 <style>
   .s-hero {
@@ -175,7 +161,8 @@ const details = [
     mix-blend-mode: difference;
   }
   .s-hero__title em {
-    font-size: 1.12em;
+    font-style: normal;
+    font-weight: 300;
   }
   .is-ready .s-hero__title .mask > span {
     transform: none;

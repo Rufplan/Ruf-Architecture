@@ -6,7 +6,6 @@
   --line-light: rgba(5, 5, 5, 0.16);
   --gutter: clamp(16px, 3vw, 44px);
   --display: 'Inter Tight', 'Helvetica Neue', Arial, sans-serif;
-  --serif: 'Instrument Serif', 'Times New Roman', Georgia, serif;
   --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
   --ease: cubic-bezier(0.7, 0, 0.2, 1);
   color-scheme: dark;
@@ -84,14 +83,6 @@ a {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-}
-
-/* Serif italic accent set against the heavy grotesk */
-.serif {
-  font-family: var(--serif);
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: -0.02em;
 }
 
 /* Underline that draws in on hover */

@@ -21,13 +21,13 @@ src/
   content.config.ts       Project schema
   data/experience.ts      Firms, roles, dates, role descriptions, skills
   content/projects/*.md   One Markdown file per project
-  scripts/massing.ts      Three.js engine: procedural models, live scenes, snapshot renderer
+  scripts/assemble.ts     Three.js engine: builds each cover photo up from the ground in 3D
   layouts/Base.astro      HTML shell, intro loader, cursor, grain, reveals
   components/             Header, Footer, WorkList (hover previews), Marquee
   pages/
-    index.astro           Home: exploding hero model, statement, work list, principal
+    index.astro           Home: 3D build-up hero, statement, image reel, work list, principal
     work/index.astro      Project index grid
-    work/[slug].astro     Project page: interactive model, text, generated drawing set, gallery
+    work/[slug].astro     Project page: 3D build-up of the cover photo, text, gallery, lightbox
     studio.astro          Studio / principal / principles
 images/                   Drop project photos + portrait here (auto-optimised)
 public/                   Static files (favicon)
@@ -47,8 +47,6 @@ years: "2025–2026"
 year: 2026               # for sorting, most recent first
 typology: "Commercial"   # becomes a filter on /work
 featured: true           # show on the home page
-form: tower              # abstract diagram: tower | slab | courtyard | cantilever | terrace | cluster
-seed: 12                 # change to vary the diagram
 ---
 
 Optional project narrative in Markdown. The role description from experience.ts is shown automatically.
@@ -60,7 +58,7 @@ Optional project narrative in Markdown. The role description from experience.ts 
 
 - Contact email and phone in `src/site.config.ts` are placeholders; the domain in `astro.config.mjs` is a guess.
 - Add photos and a portrait (`images/studio/portrait.jpg`).
-- Projects are credited to the firm and role they were done under. The 3D graphics are labelled as abstract massing diagrams, not drawings of the actual buildings.
+- Projects are credited to the firm and role they were done under.
 ## Deploy
 
 The build is fully static (`dist/`). Deploy to Cloudflare Pages, Netlify or Vercel: build command `npm run build`, output directory `dist`.

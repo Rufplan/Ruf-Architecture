@@ -16,8 +16,6 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
           href={`/work/${p.id}/`}
           class="wl__row wrap"
           data-cursor="View"
-          data-form={p.data.form}
-          data-seed={p.data.seed}
           data-title={p.data.title}
           data-image={thumbs[i]}
         >
@@ -28,12 +26,10 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
             <span>{roleOf(p).firm}</span>
             <span>{p.data.years}</span>
           </span>
-          {thumbs[i] ? (
+          {thumbs[i] && (
             <span class="wl__thumb tone" aria-hidden="true">
               <img src={thumbs[i]} alt="" loading="lazy" decoding="async" />
             </span>
-          ) : (
-            <canvas class="wl__thumb" aria-hidden="true" />
           )}
         </a>
       </li>
@@ -42,87 +38,44 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
 </ol>
 
 <div class="wl__preview" aria-hidden="true">
-  <canvas></canvas>
-  <img class="wl__preview-img" alt="" hidden />
+  <img class="wl__preview-img" alt="" />
   <span class="wl__preview-label mono"></span>
-  <span class="wl__preview-corner mono">Massing diagram</span>
 </div>
 
 <script>
-  import { SnapshotRenderer, reducedMotion, type Form, type Stage } from '../scripts/massing';
-
+  // Desktop: a floating photo preview that follows the cursor (projects with photography only).
   const list = document.querySelector<HTMLElement>('[data-worklist]');
   const preview = document.querySelector<HTMLElement>('.wl__preview');
   if (list && preview) {
-    const snap = new SnapshotRenderer();
     const rows = [...list.querySelectorAll<HTMLAnchorElement>('.wl__row')];
-    const canvas = preview.querySelector('canvas')!;
     const label = preview.querySelector<HTMLElement>('.wl__preview-label')!;
-    const corner = preview.querySelector<HTMLElement>('.wl__preview-corner')!;
     const photo = preview.querySelector<HTMLImageElement>('.wl__preview-img')!;
-    const light = { fg: 0x050505, bg: 0xf3f3f0 };
-    const dark = { fg: 0xf3f3f0, bg: 0x050505 };
     const canHover = matchMedia('(hover: hover) and (pointer: fine)');
-
-    // Touch devices: a static drawing under each row.
-    const drawThumbs = () => {
-      if (canHover.matches) return;
-      for (const row of rows) {
-        if (row.dataset.image) continue;
-        const stage = snap.stage(row.dataset.form as Form, Number(row.dataset.seed), dark, 'axo', 1.1);
-        stage.explode = stage.explodeTarget = 0.25;
-        snap.draw(row.querySelector('canvas')!, stage);
-      }
-    };
-    drawThumbs();
-    let resizeTimer = 0;
-    addEventListener('resize', () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(drawThumbs, 200);
-    });
-
-    // Desktop: floating live preview that follows the cursor.
-    let active: Stage | null = null;
     let raf = 0;
-    let last = 0;
     let x = 0, y = 0, px = 0, py = 0;
 
-    const loop = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
-      last = now;
+    const loop = () => {
       px += (x - px) * 0.14;
       py += (y - py) * 0.14;
       preview.style.transform = `translate3d(${px}px, ${py}px, 0)`;
-      if (active) snap.draw(canvas, active, dt);
       raf = requestAnimationFrame(loop);
     };
 
-    const still = reducedMotion();
     for (const row of rows) {
       row.addEventListener('pointerenter', (e) => {
-        if (!canHover.matches) return;
         const image = row.dataset.image;
-        photo.hidden = !image;
-        canvas.hidden = !!image;
-        preview.classList.toggle('has-photo', !!image);
-        corner.textContent = image ? 'Photograph' : 'Massing diagram';
-        if (image) photo.src = image;
-        active = image ? null : snap.stage(row.dataset.form as Form, Number(row.dataset.seed), light, 'axo', 1.05);
-        if (active) {
-          active.spinSpeed = still ? 0 : 0.6;
-          active.explode = 0;
-          active.explodeTarget = still ? 0 : 0.45;
+        if (!canHover.matches || !image) {
+          preview.classList.remove('is-on');
+          return;
         }
+        photo.src = image;
         label.textContent = row.dataset.title ?? '';
         if (!preview.classList.contains('is-on')) {
           x = px = e.clientX;
           y = py = e.clientY;
         }
         preview.classList.add('is-on');
-        if (!raf) {
-          last = performance.now();
-          raf = requestAnimationFrame(loop);
-        }
+        if (!raf) raf = requestAnimationFrame(loop);
       });
     }
     list.addEventListener('pointerleave', () => {
@@ -131,7 +84,6 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
         if (!preview.classList.contains('is-on')) {
           cancelAnimationFrame(raf);
           raf = 0;
-          active = null;
         }
       }, 600);
     });
@@ -199,38 +151,24 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
     top: 0;
     left: 0;
     z-index: 60;
-    width: clamp(260px, 24vw, 420px);
-    aspect-ratio: 4 / 5;
+    width: clamp(320px, 34vw, 620px);
+    aspect-ratio: 4 / 3;
     max-width: 100%;
-    margin: calc(clamp(260px, 24vw, 420px) * -0.625) 0 0 calc(clamp(260px, 24vw, 420px) * -0.5);
+    margin: calc(clamp(320px, 34vw, 620px) * -0.375) 0 0 calc(clamp(320px, 34vw, 620px) * -0.5);
     pointer-events: none;
-    background: var(--white);
-    color: var(--black);
+    background: var(--black);
+    color: var(--white);
     clip-path: inset(50% 50% 50% 50%);
     transition: clip-path 0.7s var(--ease);
   }
   .wl__preview.is-on {
     clip-path: inset(0 0 0 0);
   }
-  .wl__preview canvas,
   .wl__preview-img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
-  }
-  .wl__preview.has-photo {
-    width: clamp(320px, 34vw, 620px);
-    aspect-ratio: 4 / 3;
-    margin: calc(clamp(320px, 34vw, 620px) * -0.375) 0 0 calc(clamp(320px, 34vw, 620px) * -0.5);
-    background: var(--black);
-    color: var(--white);
-  }
-  .wl__preview.has-photo .wl__preview-label,
-  .wl__preview.has-photo .wl__preview-corner {
-    mix-blend-mode: difference;
-  }
-  .wl__preview-img {
     animation: preview-zoom 1.4s var(--ease) both;
   }
   @keyframes preview-zoom {
@@ -238,16 +176,11 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
       transform: scale(1.15);
     }
   }
-  .wl__preview-label,
-  .wl__preview-corner {
+  .wl__preview-label {
     position: absolute;
     left: 14px;
     bottom: 12px;
-  }
-  .wl__preview-corner {
-    top: 12px;
-    bottom: auto;
-    opacity: 0.5;
+    mix-blend-mode: difference;
   }
 
   @media (hover: none), (pointer: coarse) {
