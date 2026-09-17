@@ -1,0 +1,229 @@
+---
+import Base from '../layouts/Base.astro';
+import Marquee from '../components/Marquee.astro';
+import { site } from '../site.config';
+
+// TODO: replace with the studio's own principles.
+const principles = [
+  { title: 'Reduce', text: 'Every project begins by removing what is not needed, until only the essential idea remains.' },
+  { title: 'Mass', text: 'We work with weight and volume — buildings that feel grounded, permanent and calm.' },
+  { title: 'Light', text: 'Daylight is the primary material. Openings are placed to draw it deep and to shape shadow.' },
+  { title: 'Craft', text: 'Details are resolved with the same rigour as the plan, from concept to construction.' },
+];
+---
+
+<Base title="Studio" description={`${site.name} is led by ${site.principal}, ${site.principalTitle}.`}>
+  <section class="s-hero dark">
+    <div class="s-hero__scene" data-scene></div>
+    <div class="wrap s-hero__inner">
+      <p class="mono s-hero__kicker">( Studio )</p>
+      <h1 class="s-hero__title">
+        <span class="mask"><span>Less,</span></span>
+        <span class="mask"><span><em>but</em> heavier.</span></span>
+      </h1>
+    </div>
+  </section>
+
+  <section class="s-principal light">
+    <div class="wrap s-principal__grid">
+      <div class="s-principal__portrait" data-reveal>
+        <div class="s-principal__frame">
+          <span class="mono">Portrait — {site.principal}</span>
+        </div>
+      </div>
+      <div class="s-principal__body">
+        <p class="mono">( {site.principalTitle} )</p>
+        <h2 class="s-principal__name">
+          <span class="mask"><span>{site.principal}</span></span>
+        </h2>
+        <div class="s-principal__bio" data-reveal>
+          <p>
+            {site.principal} is the founder and {site.principalTitle.toLowerCase()} of {site.name}. <!-- TODO: biography -->
+            Placeholder biography — add background, education, and the path that led to founding the studio.
+          </p>
+          <p>
+            Placeholder — describe how the studio works with clients, collaborators and builders, and the kinds of
+            projects it takes on.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Marquee words={['Reduce', 'Mass', 'Light', 'Craft']} />
+
+  <section class="s-principles dark">
+    <div class="wrap">
+      <p class="mono s-principles__kicker">( Principles )</p>
+      <ol class="s-principles__list">
+        {
+          principles.map((p, i) => (
+            <li data-reveal>
+              <span class="mono">{String(i + 1).padStart(2, '0')}</span>
+              <h3>{p.title}</h3>
+              <p>{p.text}</p>
+            </li>
+          ))
+        }
+      </ol>
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { mountMassing } from '../scripts/massing';
+  const el = document.querySelector<HTMLElement>('.s-hero [data-scene]');
+  if (el) {
+    mountMassing(el, {
+      form: 'slab',
+      seed: 8,
+      palette: { fg: 0xf3f3f0, bg: 0x050505 },
+      build: true,
+      zoom: 0.8,
+    });
+  }
+</script>
+
+<style>
+  .s-hero {
+    position: relative;
+    height: 100vh;
+    height: 100svh;
+    min-height: 560px;
+    overflow: hidden;
+  }
+  .s-hero__scene {
+    position: absolute;
+    inset: 0 0 0 30%;
+  }
+  .s-hero__inner {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding-bottom: clamp(20px, 3vw, 44px);
+    pointer-events: none;
+  }
+  .s-hero__kicker {
+    color: var(--grey);
+    margin: 0 0 20px;
+  }
+  .s-hero__title {
+    margin: 0 0 0 -0.04em;
+    font-weight: 900;
+    font-size: clamp(64px, 15vw, 280px);
+    line-height: 0.82;
+    letter-spacing: -0.07em;
+    mix-blend-mode: difference;
+  }
+  .s-hero__title em {
+    font-style: normal;
+    font-weight: 300;
+  }
+  .is-ready .s-hero__title .mask > span {
+    transform: none;
+    transition-delay: 0.3s;
+  }
+  .is-ready .s-hero__title .mask:nth-child(2) > span {
+    transition-delay: 0.42s;
+  }
+
+  .s-principal {
+    padding-block: clamp(100px, 14vw, 200px);
+  }
+  .s-principal__grid {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: clamp(28px, 5vw, 80px);
+    align-items: start;
+  }
+  .s-principal__frame {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    max-width: 100%;
+    background: var(--black);
+    color: var(--grey);
+    display: grid;
+    place-items: end start;
+    padding: 18px;
+    background-image:
+      linear-gradient(var(--line-dark), var(--line-dark)),
+      linear-gradient(var(--line-dark), var(--line-dark));
+    background-size: 1px 100%, 100% 1px;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  .s-principal__name {
+    margin: 20px 0 0;
+    font-weight: 900;
+    font-size: clamp(56px, 9vw, 170px);
+    line-height: 0.84;
+    letter-spacing: -0.065em;
+  }
+  .s-principal__bio {
+    margin-top: 48px;
+    max-width: 36em;
+    font-size: clamp(17px, 1.4vw, 22px);
+    line-height: 1.5;
+  }
+
+  .s-principles {
+    padding-block: clamp(100px, 14vw, 200px);
+  }
+  .s-principles__kicker {
+    color: var(--grey);
+    margin: 0 0 40px;
+  }
+  .s-principles__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-top: 1px solid var(--line-dark);
+  }
+  .s-principles__list li {
+    padding: 24px clamp(12px, 1.6vw, 28px) 40px 0;
+    border-right: 1px solid var(--line-dark);
+  }
+  .s-principles__list li + li {
+    padding-left: clamp(12px, 1.6vw, 28px);
+  }
+  .s-principles__list li:last-child {
+    border-right: 0;
+  }
+  .s-principles__list li:nth-child(2) { transition-delay: 0.08s; }
+  .s-principles__list li:nth-child(3) { transition-delay: 0.16s; }
+  .s-principles__list li:nth-child(4) { transition-delay: 0.24s; }
+  .s-principles__list h3 {
+    margin: 60px 0 16px;
+    font-weight: 800;
+    font-size: clamp(34px, 3.6vw, 60px);
+    letter-spacing: -0.05em;
+    line-height: 0.9;
+  }
+  .s-principles__list p {
+    margin: 0;
+    color: #bdbdb8;
+  }
+
+  @media (max-width: 860px) {
+    .s-hero__scene {
+      inset: 0;
+    }
+    .s-principal__grid {
+      grid-template-columns: 1fr;
+    }
+    .s-principles__list {
+      grid-template-columns: 1fr 1fr;
+    }
+    .s-principles__list li {
+      border-right: 0;
+      border-bottom: 1px solid var(--line-dark);
+      padding-inline: 0 12px !important;
+    }
+  }
+  @media (max-width: 520px) {
+    .s-principles__list {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

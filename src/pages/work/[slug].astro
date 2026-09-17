@@ -1,0 +1,424 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+export async function getStaticPaths() {
+  const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+  return projects.map((project, i) => ({
+    params: { slug: project.id },
+    props: { project, index: i, next: projects[(i + 1) % projects.length] },
+  }));
+}
+
+const { project, index, next } = Astro.props;
+const { Content } = await render(project);
+const d = project.data;
+const num = String(index + 1).padStart(2, '0');
+const facts = [
+  ['Location', d.location],
+  ['Year', String(d.year)],
+  ['Typology', d.typology],
+  ['Status', d.status],
+  ...(d.area ? [['Area', d.area]] : []),
+];
+const sheets = [
+  { view: 'plan', code: 'A-101', name: 'Roof plan' },
+  { view: 'elevation', code: 'A-201', name: 'South elevation' },
+  { view: 'axo', code: 'A-301', name: 'Axonometric' },
+];
+---
+
+<Base title={d.title} description={d.summary}>
+  <!-- HERO MODEL -->
+  <section class="p-hero dark" data-form={d.form} data-seed={d.seed}>
+    <div class="p-hero__scene" data-scene data-cursor="Drag"></div>
+
+    <div class="p-hero__crumb wrap mono">
+      <a href="/work/" class="link">Work</a>
+      <span>/</span>
+      <span>{num}</span>
+    </div>
+
+    <div class="p-hero__controls wrap mono">
+      <button type="button" data-explode aria-pressed="false">[ Explode ]</button>
+      <button type="button" data-spin aria-pressed="true">[ Rotate ]</button>
+    </div>
+
+    <div class="p-hero__foot wrap">
+      <h1 class="p-hero__title">
+        <span class="mask"><span>{d.title}</span></span>
+      </h1>
+      <dl class="p-hero__facts mono">
+        {
+          facts.slice(0, 4).map(([k, v]) => (
+            <div>
+              <dt>{k}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+
+  <!-- TEXT -->
+  <section class="p-text light">
+    <div class="wrap p-text__grid">
+      <p class="mono p-text__kicker">( {num} — Project )</p>
+      <p class="p-text__summary" data-reveal>{d.summary}</p>
+      <div class="p-text__body" data-reveal>
+        <Content />
+      </div>
+      <dl class="p-text__facts mono" data-reveal>
+        {
+          facts.map(([k, v]) => (
+            <div>
+              <dt>{k}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))
+        }
+        {
+          d.credits.map((c) => (
+            <div>
+              <dt>{c.role}</dt>
+              <dd>{c.name}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+
+  <!-- DRAWING SET generated from the model -->
+  <section class="p-sheets light" aria-label="Drawings">
+    <div class="wrap p-sheets__grid">
+      {
+        sheets.map((s, i) => (
+          <figure class:list={['sheet', i === 2 && 'sheet--wide']} data-reveal>
+            <canvas data-view={s.view} aria-label={`${s.name} of ${d.title}`} role="img" />
+            <figcaption class="sheet__block mono">
+              <span>{s.code}</span>
+              <span>{s.name}</span>
+              <span>{d.title}</span>
+              <span>NTS</span>
+            </figcaption>
+          </figure>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- GALLERY (photography / renders) -->
+  {
+    d.gallery.length > 0 && (
+      <section class="p-gallery dark">
+        <div class="wrap p-gallery__grid">
+          {d.gallery.map((img, i) => (
+            <figure class:list={['shot', i % 3 === 0 && 'shot--full']} data-reveal>
+              <img src={img.src} alt={img.alt} loading="lazy" decoding="async" />
+              {img.caption && <figcaption class="mono">{img.caption}</figcaption>}
+            </figure>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  <!-- NEXT -->
+  <a href={`/work/${next.id}/`} class="p-next dark" data-cursor="Next">
+    <span class="wrap p-next__label mono">Next project →</span>
+    <span class="wrap p-next__title">{next.data.title}</span>
+  </a>
+</Base>
+
+<script>
+  import { mountMassing, SnapshotRenderer, type Form, type View } from '../../scripts/massing';
+
+  const hero = document.querySelector<HTMLElement>('.p-hero');
+  const container = hero?.querySelector<HTMLElement>('[data-scene]');
+  if (hero && container) {
+    const form = hero.dataset.form as Form;
+    const seed = Number(hero.dataset.seed);
+
+    const { stage } = mountMassing(container, {
+      form,
+      seed,
+      palette: { fg: 0xf3f3f0, bg: 0x050505 },
+      build: true,
+      draggable: true,
+      zoom: 0.95,
+    });
+
+    const explodeBtn = hero.querySelector<HTMLButtonElement>('[data-explode]')!;
+    const spinBtn = hero.querySelector<HTMLButtonElement>('[data-spin]')!;
+    const baseSpin = stage.spinSpeed;
+    explodeBtn.addEventListener('click', () => {
+      const on = explodeBtn.getAttribute('aria-pressed') !== 'true';
+      explodeBtn.setAttribute('aria-pressed', String(on));
+      stage.explodeTarget = on ? 0.9 : 0;
+    });
+    spinBtn.addEventListener('click', () => {
+      const on = spinBtn.getAttribute('aria-pressed') !== 'true';
+      spinBtn.setAttribute('aria-pressed', String(on));
+      stage.spinSpeed = on ? baseSpin : 0;
+    });
+
+    // Drawing sheets: one shared context renders plan / elevation / axo.
+    const snap = new SnapshotRenderer();
+    const canvases = [...document.querySelectorAll<HTMLCanvasElement>('.sheet canvas')];
+    const palette = { fg: 0x050505, bg: 0xf3f3f0 };
+    const draw = () => {
+      for (const c of canvases) {
+        const s = snap.stage(form, seed, palette, c.dataset.view as View, 0.9);
+        snap.draw(c, s);
+      }
+    };
+    requestAnimationFrame(draw);
+    let t = 0;
+    addEventListener('resize', () => {
+      clearTimeout(t);
+      t = window.setTimeout(draw, 200);
+    });
+  }
+</script>
+
+<style>
+  /* HERO */
+  .p-hero {
+    position: relative;
+    height: 100vh;
+    height: 100svh;
+    min-height: 560px;
+    overflow: hidden;
+  }
+  .p-hero__scene {
+    position: absolute;
+    inset: 0;
+    touch-action: pan-y;
+  }
+  .p-hero__crumb {
+    position: absolute;
+    top: 76px;
+    left: 0;
+    display: flex;
+    gap: 10px;
+    color: var(--grey);
+  }
+  .p-hero__controls {
+    position: absolute;
+    top: 76px;
+    right: 0;
+    display: flex;
+    gap: 16px;
+  }
+  .p-hero__controls button {
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--grey);
+    background: none;
+    border: 0;
+    padding: 0;
+    transition: color 0.3s;
+  }
+  .p-hero__controls button[aria-pressed='true'],
+  .p-hero__controls button:hover {
+    color: var(--white);
+  }
+  .p-hero__foot {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding-bottom: clamp(16px, 2.5vw, 36px);
+    pointer-events: none;
+  }
+  .p-hero__title {
+    margin: 0 0 clamp(18px, 2vw, 28px) -0.04em;
+    font-weight: 900;
+    font-size: clamp(56px, 12.5vw, 240px);
+    line-height: 0.84;
+    letter-spacing: -0.07em;
+    mix-blend-mode: difference;
+  }
+  .is-ready .p-hero__title .mask > span {
+    transform: none;
+    transition-delay: 0.3s;
+  }
+  .p-hero__facts {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+    margin: 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--line-dark);
+  }
+  .p-hero__facts dt,
+  .p-text__facts dt {
+    color: var(--grey);
+  }
+  .p-hero__facts dd,
+  .p-text__facts dd {
+    margin: 0;
+  }
+
+  /* TEXT */
+  .p-text {
+    padding-block: clamp(90px, 12vw, 180px) clamp(40px, 6vw, 80px);
+  }
+  .p-text__grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 40px clamp(16px, 2vw, 32px);
+  }
+  .p-text__kicker {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+  .p-text__summary {
+    grid-column: 1 / 10;
+    margin: 0;
+    font-weight: 500;
+    font-size: clamp(30px, 4.6vw, 76px);
+    line-height: 1;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+  .p-text__body {
+    grid-column: 6 / 12;
+    font-size: clamp(17px, 1.35vw, 21px);
+    line-height: 1.5;
+  }
+  .p-text__body :global(p) {
+    margin: 0 0 1.1em;
+  }
+  .p-text__facts {
+    grid-column: 1 / 5;
+    grid-row: 3;
+    margin: 0;
+    align-self: start;
+    border-top: 1px solid var(--line-light);
+  }
+  .p-text__facts div {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: 12px;
+    padding-block: 10px;
+    border-bottom: 1px solid var(--line-light);
+  }
+  .p-text__facts dt {
+    color: #6b6b67;
+  }
+
+  /* SHEETS */
+  .p-sheets {
+    padding-bottom: clamp(90px, 12vw, 180px);
+  }
+  .p-sheets__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(16px, 2vw, 32px);
+  }
+  .sheet {
+    margin: 0;
+    border: 1px solid var(--black);
+  }
+  .sheet--wide {
+    grid-column: 1 / -1;
+  }
+  .sheet canvas {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+  }
+  .sheet--wide canvas {
+    aspect-ratio: 21 / 9;
+  }
+  .sheet__block {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr auto;
+    border-top: 1px solid var(--black);
+  }
+  .sheet__block span {
+    padding: 10px 14px;
+    border-right: 1px solid var(--black);
+  }
+  .sheet__block span:last-child {
+    border-right: 0;
+  }
+
+  /* GALLERY */
+  .p-gallery {
+    padding-block: clamp(60px, 8vw, 120px);
+  }
+  .p-gallery__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(16px, 2vw, 32px);
+  }
+  .shot {
+    margin: 0;
+  }
+  .shot--full {
+    grid-column: 1 / -1;
+  }
+  .shot img {
+    width: 100%;
+    height: auto;
+    filter: grayscale(1) contrast(1.08);
+  }
+  .shot figcaption {
+    padding-top: 10px;
+    color: var(--grey);
+  }
+
+  /* NEXT */
+  .p-next {
+    display: block;
+    padding-block: clamp(70px, 10vw, 150px);
+    border-top: 1px solid var(--line-dark);
+    overflow: hidden;
+  }
+  .p-next__label {
+    display: block;
+    color: var(--grey);
+    margin-bottom: 20px;
+  }
+  .p-next__title {
+    display: block;
+    font-weight: 900;
+    font-size: clamp(52px, 11vw, 200px);
+    line-height: 0.86;
+    letter-spacing: -0.07em;
+    transition: transform 0.8s var(--ease), font-weight 0.8s;
+  }
+  .p-next:hover .p-next__title {
+    transform: translateX(clamp(16px, 4vw, 70px));
+    font-weight: 300;
+  }
+
+  @media (max-width: 860px) {
+    .p-hero__facts {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .p-text__summary,
+    .p-text__body,
+    .p-text__facts {
+      grid-column: 1 / -1;
+      grid-row: auto;
+    }
+    .p-sheets__grid,
+    .p-gallery__grid {
+      grid-template-columns: 1fr;
+    }
+    .sheet--wide canvas {
+      aspect-ratio: 4 / 3;
+    }
+    .sheet__block {
+      grid-template-columns: auto 1fr auto;
+    }
+    .sheet__block span:nth-child(3) {
+      display: none;
+    }
+  }
+</style>

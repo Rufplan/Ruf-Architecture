@@ -1,0 +1,89 @@
+---
+import { site } from '../site.config';
+const path = Astro.url.pathname;
+const nav = [
+  { href: '/work/', label: 'Work' },
+  { href: '/studio/', label: 'Studio' },
+  { href: '#contact', label: 'Contact' },
+];
+---
+
+<a class="skip mono" href="#main">Skip to content</a>
+<header class="header">
+  <a href="/" class="header__logo" aria-label={`${site.name} — home`}>
+    <span class="header__mark">{site.short}</span>
+    <span class="header__name mono">Architecture</span>
+  </a>
+  <nav class="header__nav mono" aria-label="Primary">
+    {
+      nav.map((item, i) => (
+        <a
+          href={item.href}
+          class="link"
+          aria-current={path.startsWith(item.href) ? 'page' : undefined}
+        >
+          <span class="header__idx">0{i + 1}</span> {item.label}
+        </a>
+      ))
+    }
+  </nav>
+</header>
+
+<style>
+  .skip {
+    position: fixed;
+    top: -100px;
+    left: var(--gutter);
+    z-index: 200;
+    background: var(--white);
+    color: var(--black);
+    padding: 8px 12px;
+  }
+  .skip:focus {
+    top: 12px;
+  }
+  .header {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 20px var(--gutter);
+    color: #fff;
+    mix-blend-mode: difference;
+    pointer-events: none;
+  }
+  .header a {
+    pointer-events: auto;
+  }
+  .header__logo {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  .header__mark {
+    font-weight: 900;
+    font-size: 26px;
+    letter-spacing: -0.05em;
+    line-height: 1;
+  }
+  .header__nav {
+    display: flex;
+    gap: clamp(14px, 3vw, 40px);
+  }
+  .header__idx {
+    opacity: 0.5;
+    margin-right: 2px;
+  }
+  .header__nav a[aria-current='page'] {
+    background-size: 100% 1px;
+  }
+  @media (max-width: 560px) {
+    .header__name,
+    .header__idx {
+      display: none;
+    }
+  }
+</style>

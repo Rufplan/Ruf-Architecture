@@ -1,0 +1,201 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+---
+
+<Base title="Work" description="Selected projects by Ruf Architecture.">
+  <section class="index dark">
+    <div class="wrap index__head">
+      <p class="mono">( Index — {String(projects.length).padStart(2, '0')} projects )</p>
+      <h1 class="index__title">
+        <span class="mask"><span>Work</span></span>
+      </h1>
+    </div>
+
+    <div class="wrap index__grid">
+      {
+        projects.map((p, i) => (
+          <a
+            href={`/work/${p.id}/`}
+            class="card"
+            data-reveal
+            data-cursor="Open"
+            data-form={p.data.form}
+            data-seed={p.data.seed}
+          >
+            <div class="card__media">
+              <canvas aria-hidden="true" />
+              <span class="card__num mono">{String(i + 1).padStart(2, '0')}</span>
+              <span class="card__form mono">{p.data.form}</span>
+            </div>
+            <div class="card__info">
+              <h2 class="card__title">{p.data.title}</h2>
+              <p class="card__meta mono">
+                <span>{p.data.typology}</span>
+                <span>{p.data.location}</span>
+                <span>{p.data.year}</span>
+              </p>
+            </div>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { SnapshotRenderer, reducedMotion, type Form, type Stage } from '../../scripts/massing';
+
+  const cards = [...document.querySelectorAll<HTMLElement>('.card')];
+  const snap = new SnapshotRenderer();
+  const palette = { fg: 0xf3f3f0, bg: 0x050505 };
+  const still = reducedMotion();
+
+  const stageFor = (card: HTMLElement) =>
+    snap.stage(card.dataset.form as Form, Number(card.dataset.seed), palette, 'axo', 1.15);
+
+  const drawAll = () => {
+    for (const card of cards) {
+      const stage = stageFor(card);
+      stage.explode = stage.explodeTarget = 0;
+      snap.draw(card.querySelector('canvas')!, stage);
+    }
+  };
+  // Wait a frame so layout (and canvas client size) is settled.
+  requestAnimationFrame(drawAll);
+  let t = 0;
+  addEventListener('resize', () => {
+    clearTimeout(t);
+    t = window.setTimeout(drawAll, 200);
+  });
+
+  let active: { card: HTMLElement; stage: Stage } | null = null;
+  let raf = 0;
+  let last = 0;
+  const loop = (now: number) => {
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (!active) return;
+    snap.draw(active.card.querySelector('canvas')!, active.stage, dt);
+    const settled = Math.abs(active.stage.explode - active.stage.explodeTarget) < 0.002 && active.stage.explodeTarget === 0;
+    if (settled && !active.card.matches(':hover')) {
+      active = null;
+      raf = 0;
+      return;
+    }
+    raf = requestAnimationFrame(loop);
+  };
+
+  if (!still) {
+    for (const card of cards) {
+      card.addEventListener('pointerenter', () => {
+        if (active && active.card !== card) active.stage.explodeTarget = 0;
+        const stage = stageFor(card);
+        stage.spinSpeed = 0.5;
+        stage.explodeTarget = 0.5;
+        active = { card, stage };
+        if (!raf) {
+          last = performance.now();
+          raf = requestAnimationFrame(loop);
+        }
+      });
+      card.addEventListener('pointerleave', () => {
+        const stage = stageFor(card);
+        stage.explodeTarget = 0;
+        stage.spinSpeed = 0;
+      });
+    }
+  }
+</script>
+
+<style>
+  .index {
+    padding-top: clamp(120px, 16vw, 220px);
+    padding-bottom: clamp(80px, 10vw, 160px);
+  }
+  .index__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: clamp(40px, 6vw, 100px);
+  }
+  .index__title {
+    margin: 0;
+    font-weight: 900;
+    font-size: clamp(96px, 24vw, 440px);
+    line-height: 0.76;
+    letter-spacing: -0.075em;
+  }
+  .is-ready .index__title .mask > span {
+    transform: none;
+  }
+  .index__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(40px, 5vw, 80px) clamp(16px, 2.4vw, 40px);
+  }
+  /* Offset rhythm down the grid */
+  .card:nth-child(even) {
+    margin-top: clamp(0px, 10vw, 180px);
+  }
+  .card__media {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    max-width: 100%;
+    border: 1px solid var(--line-dark);
+    overflow: hidden;
+    transition: background-color 0.6s var(--ease);
+  }
+  .card__media canvas {
+    width: 100%;
+    height: 100%;
+  }
+  .card__num,
+  .card__form {
+    position: absolute;
+    top: 14px;
+    color: var(--grey);
+  }
+  .card__num {
+    left: 14px;
+  }
+  .card__form {
+    right: 14px;
+  }
+  .card__info {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    padding-top: 18px;
+  }
+  .card__title {
+    margin: 0;
+    font-weight: 800;
+    font-size: clamp(28px, 3.4vw, 56px);
+    letter-spacing: -0.05em;
+    line-height: 0.95;
+  }
+  .card__meta {
+    display: flex;
+    gap: 18px;
+    margin: 0;
+    color: var(--grey);
+  }
+  .card:hover .card__media {
+    border-color: var(--white);
+  }
+  @media (max-width: 760px) {
+    .index__grid {
+      grid-template-columns: 1fr;
+    }
+    .card:nth-child(even) {
+      margin-top: 0;
+    }
+  }
+</style>

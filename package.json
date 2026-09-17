@@ -1,0 +1,20 @@
+{
+  "name": "ruf-architecture",
+  "version": "1.0.0",
+  "description": "Portfolio website for Ruf Architecture — Rufus Kerr, Principal",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^7.3.3",
+    "three": "^0.186.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0"
+  }
+}

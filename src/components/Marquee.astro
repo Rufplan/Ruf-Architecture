@@ -1,0 +1,71 @@
+---
+interface Props {
+  words: string[];
+}
+const { words } = Astro.props;
+const run = [...words, ...words];
+---
+
+<div class="marquee dark" aria-hidden="true">
+  <div class="marquee__track">
+    {
+      [0, 1].map(() => (
+        <div class="marquee__group">
+          {run.map((w, i) => (
+            <span class:list={['marquee__item', i % 2 === 1 && 'is-outline']}>
+              {w}
+              <span class="marquee__dot" />
+            </span>
+          ))}
+        </div>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .marquee {
+    overflow: hidden;
+    padding-block: clamp(28px, 4vw, 60px);
+    border-block: 1px solid var(--line-dark);
+  }
+  .marquee__track {
+    display: flex;
+    width: max-content;
+    animation: marquee 38s linear infinite;
+  }
+  .marquee__group {
+    display: flex;
+  }
+  .marquee__item {
+    display: inline-flex;
+    align-items: center;
+    gap: clamp(20px, 3vw, 50px);
+    padding-right: clamp(20px, 3vw, 50px);
+    font-weight: 900;
+    font-size: clamp(64px, 12vw, 210px);
+    line-height: 0.9;
+    letter-spacing: -0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .marquee__item.is-outline {
+    color: transparent;
+    -webkit-text-stroke: 1px var(--white);
+  }
+  .marquee__dot {
+    width: 0.16em;
+    height: 0.16em;
+    background: var(--white);
+  }
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .marquee__track {
+      animation: none;
+    }
+  }
+</style>

@@ -1,0 +1,417 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import WorkList from '../components/WorkList.astro';
+import Marquee from '../components/Marquee.astro';
+import { site } from '../site.config';
+
+const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+const statement =
+  'We design buildings as instruments of light and shadow — reducing every project to the essential: mass, line, and the space between.';
+---
+
+<Base>
+  <!-- HERO: sticky Three.js massing that explodes floor by floor as you scroll -->
+  <section class="hero dark" data-hero>
+    <div class="hero__sticky">
+      <div class="hero__scene" data-hero-scene></div>
+
+      <div class="hero__top wrap mono">
+        <span>{site.name}</span>
+        <span class="hero__rule" aria-hidden="true"></span>
+        <span>{site.principal}, {site.principalTitle}</span>
+      </div>
+
+      <div class="hero__readout wrap mono" aria-hidden="true">
+        <span>View / Axonometric</span>
+        <span>Rot <b data-angle>045.0</b>°</span>
+        <span>Explode <b data-explode>0.00</b></span>
+        <span>Levels <b data-levels>—</b></span>
+      </div>
+
+      <h1 class="hero__title wrap">
+        <span class="visually-hidden">{site.name} — {site.principal}, {site.principalTitle}</span>
+        <span class="hero__word" aria-hidden="true">
+          <span class="mask"><span>{site.short}</span></span>
+        </span>
+        <span class="hero__side" aria-hidden="true">
+          <span class="mask"><span>Architecture</span></span>
+          <span class="mask"><span class="hero__tag">{site.tagline}</span></span>
+        </span>
+      </h1>
+
+      <p class="hero__scroll mono" aria-hidden="true"><span></span>Scroll</p>
+    </div>
+  </section>
+
+  <!-- STATEMENT -->
+  <section class="statement light" data-statement>
+    <div class="wrap statement__inner">
+      <p class="mono statement__kicker">( 01 — Approach )</p>
+      <p class="statement__text">
+        {statement.split(' ').map((w) => <span class="word">{w} </span>)}
+      </p>
+      <div class="statement__foot mono">
+        <span>Mass</span><span>Light</span><span>Line</span><span>Shadow</span>
+      </div>
+    </div>
+  </section>
+
+  <Marquee words={['Mass', 'Light', 'Line', 'Shadow', 'Space']} />
+
+  <!-- WORK -->
+  <section class="work dark" id="work">
+    <div class="wrap work__head">
+      <p class="mono">( 02 — Selected work )</p>
+      <h2 class="work__title">
+        <span class="mask"><span>Selected</span></span>
+        <span class="mask"><span><em>Work</em> <sup class="mono">({String(projects.length).padStart(2, '0')})</sup></span></span>
+      </h2>
+    </div>
+    <WorkList projects={projects} />
+    <div class="wrap work__all">
+      <a href="/work/" class="mono link" data-cursor="Index">All projects →</a>
+    </div>
+  </section>
+
+  <!-- PRINCIPAL -->
+  <section class="principal light">
+    <div class="wrap principal__grid">
+      <p class="mono principal__kicker">( 03 — Studio )</p>
+      <div class="principal__portrait" data-reveal>
+        <div class="principal__frame">
+          <span class="mono">Portrait<br />{site.principal}</span>
+        </div>
+      </div>
+      <div class="principal__body">
+        <h2 class="principal__name">
+          <span class="mask"><span>{site.principal.split(' ')[0]}</span></span>
+          <span class="mask"><span>{site.principal.split(' ').slice(1).join(' ')}</span></span>
+        </h2>
+        <p class="mono principal__role">{site.principalTitle}, {site.name}</p>
+        <p class="principal__bio" data-reveal>
+          {site.name} is led by {site.principal}. The practice works across scales — from single houses to urban
+          blocks — with a conviction that architecture is most powerful when it is reduced to its essentials.
+        </p>
+        <a href="/studio/" class="principal__link mono link" data-cursor="Studio">About the studio →</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { mountMassing } from '../scripts/massing';
+
+  const hero = document.querySelector<HTMLElement>('[data-hero]');
+  const container = document.querySelector<HTMLElement>('[data-hero-scene]');
+  if (hero && container) {
+    const angle = hero.querySelector<HTMLElement>('[data-angle]')!;
+    const explode = hero.querySelector<HTMLElement>('[data-explode]')!;
+    const levels = hero.querySelector<HTMLElement>('[data-levels]')!;
+    const { stage } = mountMassing(container, {
+      form: 'cluster',
+      seed: 21,
+      palette: { fg: 0xf3f3f0, bg: 0x050505 },
+      build: true,
+      scrollExplode: hero,
+      maxExplode: 1.1,
+      zoom: 1.05,
+      onTick: (stage) => {
+        const deg = (((stage.group.rotation.y * 180) / Math.PI) % 360 + 360) % 360;
+        angle.textContent = deg.toFixed(1).padStart(5, '0');
+        explode.textContent = stage.explode.toFixed(2);
+        hero.style.setProperty('--p', String(Math.min(1, stage.explodeTarget / 1.1)));
+      },
+    });
+    levels.textContent = String(stage.levels);
+  }
+
+  // Statement words light up as the section scrolls past.
+  const statement = document.querySelector<HTMLElement>('[data-statement]');
+  if (statement) {
+    const words = [...statement.querySelectorAll<HTMLElement>('.word')];
+    const update = () => {
+      const r = statement.getBoundingClientRect();
+      const p = Math.min(1, Math.max(0, (innerHeight * 0.85 - r.top) / (r.height * 0.75)));
+      const lit = p * words.length;
+      words.forEach((w, i) => w.style.setProperty('--o', String(Math.min(1, Math.max(0.12, lit - i)))));
+    };
+    addEventListener('scroll', update, { passive: true });
+    update();
+  }
+</script>
+
+<style>
+  /* HERO */
+  .hero {
+    position: relative;
+    height: 240vh;
+    --p: 0;
+  }
+  .hero__sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    overflow: hidden;
+  }
+  .hero__scene {
+    position: absolute;
+    inset: 0;
+  }
+  .hero__top {
+    position: absolute;
+    top: 76px;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--grey);
+  }
+  .hero__rule {
+    flex: 1;
+    height: 1px;
+    background: var(--line-dark);
+  }
+  .hero__readout {
+    position: absolute;
+    top: 110px;
+    right: 0;
+    display: grid;
+    gap: 2px;
+    text-align: right;
+    color: var(--grey);
+  }
+  .hero__readout b {
+    color: var(--white);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .hero__title {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    pointer-events: none;
+    transform: translateY(calc(var(--p) * -12vh));
+    opacity: calc(1 - var(--p) * 0.85);
+    mix-blend-mode: difference;
+  }
+  .hero__word {
+    font-weight: 900;
+    font-size: clamp(120px, 31vw, 560px);
+    line-height: 0.74;
+    letter-spacing: -0.075em;
+    margin-left: -0.04em;
+    margin-bottom: -0.02em;
+  }
+  .hero__side {
+    display: grid;
+    gap: 14px;
+    max-width: 360px;
+    padding-bottom: clamp(14px, 3vw, 44px);
+    text-align: right;
+    font-weight: 300;
+    font-size: clamp(24px, 3.2vw, 52px);
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .hero__tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.5;
+    color: var(--grey);
+  }
+  .is-ready .hero .mask > span {
+    transform: none;
+    transition-delay: 0.35s;
+  }
+  .is-ready .hero__side .mask:nth-child(2) > span {
+    transition-delay: 0.55s;
+  }
+  .hero__scroll {
+    position: absolute;
+    left: 50%;
+    bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    translate: -50% 0;
+    color: var(--grey);
+    opacity: calc(1 - var(--p) * 4);
+  }
+  .hero__scroll span {
+    width: 1px;
+    height: 34px;
+    background: linear-gradient(var(--white) 50%, transparent 50%) 0 0 / 1px 200%;
+    animation: drip 1.6s var(--ease) infinite;
+  }
+  @keyframes drip {
+    from { background-position: 0 100%; }
+    to { background-position: 0 -100%; }
+  }
+  @media (max-width: 760px) {
+    .hero__title {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0;
+    }
+    .hero__side {
+      order: -1;
+      text-align: left;
+    }
+    .hero__word {
+      font-size: 44vw;
+      margin-bottom: 0.02em;
+    }
+    .hero__readout {
+      top: 104px;
+    }
+  }
+
+  /* STATEMENT */
+  .statement {
+    padding-block: clamp(110px, 18vw, 260px);
+  }
+  .statement__kicker {
+    margin: 0 0 40px;
+  }
+  .statement__text {
+    margin: 0;
+    font-weight: 500;
+    font-size: clamp(34px, 6.4vw, 112px);
+    line-height: 0.98;
+    letter-spacing: -0.045em;
+    max-width: 15.5em;
+    text-wrap: balance;
+  }
+  .word {
+    opacity: var(--o, 0.12);
+    transition: opacity 0.25s linear;
+  }
+  .statement__foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 40px;
+    margin-top: clamp(60px, 8vw, 120px);
+    padding-top: 20px;
+    border-top: 1px solid var(--line-light);
+  }
+
+  /* WORK */
+  .work {
+    padding-top: clamp(100px, 14vw, 200px);
+    padding-bottom: clamp(60px, 8vw, 120px);
+  }
+  .work__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: clamp(40px, 6vw, 90px);
+  }
+  .work__title {
+    margin: 0;
+    font-weight: 900;
+    font-size: clamp(64px, 13vw, 230px);
+    line-height: 0.82;
+    letter-spacing: -0.065em;
+    text-align: right;
+  }
+  .work__title em {
+    font-style: normal;
+    font-weight: 300;
+  }
+  .work__title sup {
+    vertical-align: top;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    font-weight: 400;
+  }
+  .work__all {
+    margin-top: 48px;
+  }
+
+  /* PRINCIPAL */
+  .principal {
+    padding-block: clamp(100px, 14vw, 200px);
+  }
+  .principal__grid {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: clamp(28px, 5vw, 80px);
+    align-items: end;
+  }
+  .principal__kicker {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+  .principal__frame {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    max-width: 100%;
+    background: var(--black);
+    color: var(--grey);
+    display: grid;
+    place-items: end start;
+    padding: 18px;
+    overflow: hidden;
+  }
+  /* Crosshair drawing marks on the portrait placeholder */
+  .principal__frame::before,
+  .principal__frame::after {
+    content: '';
+    position: absolute;
+    background: var(--line-dark);
+  }
+  .principal__frame::before {
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+  }
+  .principal__frame::after {
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+  }
+  .principal__name {
+    margin: 0;
+    font-weight: 900;
+    font-size: clamp(64px, 11vw, 200px);
+    line-height: 0.82;
+    letter-spacing: -0.065em;
+  }
+  .principal__name .mask:nth-child(2) > span {
+    font-weight: 300;
+    transition-delay: 0.08s;
+  }
+  .principal__role {
+    margin: 24px 0 0;
+  }
+  .principal__bio {
+    margin: 40px 0 32px;
+    max-width: 34em;
+    font-size: clamp(18px, 1.6vw, 24px);
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+  }
+  .principal__link {
+    display: inline-block;
+  }
+  @media (max-width: 760px) {
+    .principal__grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
