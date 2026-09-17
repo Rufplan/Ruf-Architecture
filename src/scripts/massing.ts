@@ -367,7 +367,7 @@ export function mountMassing(container: HTMLElement, opts: MountOptions) {
   const loop = (now: number) => {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    if (stage.build < 1) stage.build = Math.min(1, stage.build + dt / 2.8);
+    if (opts.build && stage.build < 1) stage.build = Math.min(1, stage.build + dt / 2.8);
     stage.tick(dt);
     opts.onTick?.(stage);
     renderer.render(stage.scene, stage.camera);

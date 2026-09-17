@@ -8,7 +8,7 @@ const year = new Date().getFullYear();
     <p class="mono footer__kicker">( Contact )</p>
     <a href={`mailto:${site.email}`} class="footer__cta" data-cursor="Write">
       <span class="mask"><span>Let's build</span></span>
-      <span class="mask"><span>something <em>solid.</em></span></span>
+      <span class="mask"><span>something <em class="serif">solid.</em></span></span>
     </a>
   </div>
 
@@ -59,8 +59,8 @@ const year = new Date().getFullYear();
     transition: opacity 0.4s;
   }
   .footer__cta em {
-    font-style: normal;
-    font-weight: 300;
+    font-size: 1.1em;
+    letter-spacing: -0.03em;
   }
   .footer__cta:hover {
     opacity: 0.6;

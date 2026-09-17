@@ -40,7 +40,7 @@ const statement =
           <span class="mask"><span>{site.short}</span></span>
         </span>
         <span class="hero__side" aria-hidden="true">
-          <span class="mask"><span>Architecture</span></span>
+          <span class="mask"><span class="serif hero__serif">Architecture</span></span>
           <span class="mask"><span class="hero__tag">{site.tagline}</span></span>
         </span>
       </h1>
@@ -72,7 +72,7 @@ const statement =
       <p class="mono">( 02 — Selected work )</p>
       <h2 class="work__title">
         <span class="mask"><span>Selected</span></span>
-        <span class="mask"><span><em>Work</em> <sup class="mono">({String(projects.length).padStart(2, '0')})</sup></span></span>
+        <span class="mask"><span><em class="serif">Work</em> <sup class="mono">({String(projects.length).padStart(2, '0')})</sup></span></span>
       </h2>
     </div>
     <WorkList projects={projects} />
@@ -232,6 +232,10 @@ const statement =
     letter-spacing: -0.03em;
     line-height: 1;
   }
+  .hero__serif {
+    font-size: 1.35em;
+    line-height: 1;
+  }
   .hero__tag {
     font-family: var(--mono);
     font-size: 11px;
@@ -338,8 +342,7 @@ const statement =
     text-align: right;
   }
   .work__title em {
-    font-style: normal;
-    font-weight: 300;
+    font-size: 1.1em;
   }
   .work__title sup {
     vertical-align: top;
