@@ -6,19 +6,22 @@ const projects = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/projects' }),
   schema: z.object({
     title: z.string(),
-    order: z.number(),
-    year: z.number(),
+    // Key into src/data/experience.ts — the firm and role this work was done under.
+    experience: z.string(),
     location: z.string(),
+    years: z.string(),
+    // Used for sorting (most recent first).
+    year: z.number(),
     typology: z.string(),
-    status: z.string(),
+    featured: z.boolean().default(false),
+    summary: z.string().optional(),
     area: z.string().optional(),
-    summary: z.string(),
-    // Procedural Three.js massing model used as the project's graphic.
+    status: z.string().optional(),
+    // Abstract Three.js massing diagram used as the project's graphic.
     form: z.enum(['tower', 'slab', 'courtyard', 'cantilever', 'terrace', 'cluster']),
     seed: z.number().default(1),
-    // Optional photography / drawings placed in /public (e.g. "/images/lake-house/01.jpg").
+    // Optional extra images from /public. Photos in images/projects/<slug>/ are picked up automatically.
     gallery: z.array(z.object({ src: z.string(), alt: z.string(), caption: z.string().optional() })).default([]),
-    credits: z.array(z.object({ role: z.string(), name: z.string() })).default([]),
   }),
 });
 

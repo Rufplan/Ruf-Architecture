@@ -1,8 +1,8 @@
 ---
-import type { CollectionEntry } from 'astro:content';
+import { roleOf, type Project } from '../lib/projects';
 
 interface Props {
-  projects: CollectionEntry<'projects'>[];
+  projects: Project[];
 }
 const { projects } = Astro.props;
 ---
@@ -23,8 +23,8 @@ const { projects } = Astro.props;
           <span class="wl__title">{p.data.title}</span>
           <span class="wl__meta mono">
             <span>{p.data.typology}</span>
-            <span>{p.data.status}</span>
-            <span>{p.data.year}</span>
+            <span>{roleOf(p).firm}</span>
+            <span>{p.data.years}</span>
           </span>
           <canvas class="wl__thumb" aria-hidden="true" />
         </a>
@@ -36,7 +36,7 @@ const { projects } = Astro.props;
 <div class="wl__preview" aria-hidden="true">
   <canvas></canvas>
   <span class="wl__preview-label mono"></span>
-  <span class="wl__preview-corner mono">Axo / 1:500</span>
+  <span class="wl__preview-corner mono">Massing diagram</span>
 </div>
 
 <script>
@@ -152,7 +152,10 @@ const { projects } = Astro.props;
   }
   .wl__meta {
     display: flex;
-    gap: 28px;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    text-align: right;
     color: var(--grey);
   }
   .wl__thumb {
@@ -214,8 +217,11 @@ const { projects } = Astro.props;
     }
     .wl__meta {
       grid-column: 2;
+      flex-direction: row;
       flex-wrap: wrap;
+      align-items: baseline;
       gap: 6px 18px;
+      text-align: left;
     }
     .wl__thumb {
       display: block;
@@ -231,8 +237,11 @@ const { projects } = Astro.props;
     }
     .wl__meta {
       grid-column: 2;
+      flex-direction: row;
       flex-wrap: wrap;
+      align-items: baseline;
       gap: 6px 18px;
+      text-align: left;
     }
   }
 </style>

@@ -1,14 +1,15 @@
 ---
-import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import WorkList from '../components/WorkList.astro';
 import Marquee from '../components/Marquee.astro';
 import { site } from '../site.config';
 import { Picture } from 'astro:assets';
 import { portrait } from '../lib/images';
+import { getProjects } from '../lib/projects';
 
 const portraitImg = portrait();
-const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+const allProjects = await getProjects();
+const projects = allProjects.filter((p) => p.data.featured);
 const statement =
   'We design buildings as instruments of light and shadow — reducing every project to the essential: mass, line, and the space between.';
 ---
@@ -73,7 +74,7 @@ const statement =
     </div>
     <WorkList projects={projects} />
     <div class="wrap work__all">
-      <a href="/work/" class="mono link" data-cursor="Index">All projects →</a>
+      <a href="/work/" class="mono link" data-cursor="Index">All {allProjects.length} projects →</a>
     </div>
   </section>
 
@@ -98,10 +99,7 @@ const statement =
           <span class="mask"><span>{site.principal.split(' ').slice(1).join(' ')}</span></span>
         </h2>
         <p class="mono principal__role">{site.principalTitle}, {site.name}</p>
-        <p class="principal__bio" data-reveal>
-          {site.name} is led by {site.principal}. The practice works across scales — from single houses to urban
-          blocks — with a conviction that architecture is most powerful when it is reduced to its essentials.
-        </p>
+        <p class="principal__bio" data-reveal>{site.bio[0]}</p>
         <a href="/studio/" class="principal__link mono link" data-cursor="Studio">About the studio →</a>
       </div>
     </div>

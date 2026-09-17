@@ -4,19 +4,22 @@ import Marquee from '../components/Marquee.astro';
 import { site } from '../site.config';
 import { Picture } from 'astro:assets';
 import { portrait } from '../lib/images';
+import { getProjects } from '../lib/projects';
+import { experience, expertise, software, languages } from '../data/experience';
 
 const portraitImg = portrait();
-
-// TODO: replace with the studio's own principles.
-const principles = [
-  { title: 'Reduce', text: 'Every project begins by removing what is not needed, until only the essential idea remains.' },
-  { title: 'Mass', text: 'We work with weight and volume — buildings that feel grounded, permanent and calm.' },
-  { title: 'Light', text: 'Daylight is the primary material. Openings are placed to draw it deep and to shape shadow.' },
-  { title: 'Craft', text: 'Details are resolved with the same rigour as the plan, from concept to construction.' },
+const projects = await getProjects();
+const projectsByFirm = (key: string) => projects.filter((p) => p.data.experience === key);
+const details = [
+  ['Based in', site.location],
+  ['Licensed in', site.licensed],
+  ['Experience', '10+ years'],
+  ['Projects', String(projects.length)],
+  ['Languages', languages.join(', ')],
 ];
 ---
 
-<Base title="Studio" description={`${site.name} is led by ${site.principal}, ${site.principalTitle}.`}>
+<Base title="Studio" description={site.bio[0]}>
   <section class="s-hero dark">
     <div class="s-hero__scene" data-scene></div>
     <div class="wrap s-hero__inner">
@@ -47,35 +50,82 @@ const principles = [
           <span class="mask"><span>{site.principal}</span></span>
         </h2>
         <div class="s-principal__bio" data-reveal>
-          <p>
-            {site.principal} is the founder and {site.principalTitle.toLowerCase()} of {site.name}. <!-- TODO: biography -->
-            Placeholder biography — add background, education, and the path that led to founding the studio.
-          </p>
-          <p>
-            Placeholder — describe how the studio works with clients, collaborators and builders, and the kinds of
-            projects it takes on.
-          </p>
+          {site.bio.map((para) => <p>{para}</p>)}
         </div>
+        <dl class="s-details mono" data-reveal>
+          {
+            details.map(([k, v]) => (
+              <div>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))
+          }
+        </dl>
       </div>
     </div>
   </section>
 
-  <Marquee words={['Reduce', 'Mass', 'Light', 'Craft']} />
+  <Marquee words={['Revit', 'Schematic Design', 'Permit Drawings', 'Massing', 'Rendering']} />
 
-  <section class="s-principles dark">
+  <section class="s-exp dark">
     <div class="wrap">
-      <p class="mono s-principles__kicker">( Principles )</p>
-      <ol class="s-principles__list">
+      <p class="mono s-kicker">( Experience )</p>
+      <ol class="s-exp__list">
         {
-          principles.map((p, i) => (
-            <li data-reveal>
-              <span class="mono">{String(i + 1).padStart(2, '0')}</span>
-              <h3>{p.title}</h3>
-              <p>{p.text}</p>
+          experience.map((e) => (
+            <li class="s-exp__item" data-reveal>
+              <p class="mono s-exp__dates">{e.dates}</p>
+              <div>
+                <h3 class="s-exp__firm">{e.firm}</h3>
+                <p class="mono s-exp__role">
+                  {e.role} · {e.location}
+                </p>
+              </div>
+              <ul class="s-exp__projects">
+                {projectsByFirm(e.key).map((p) => (
+                  <li>
+                    <a href={`/work/${p.id}/`} class="link" data-cursor="View">
+                      {p.data.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
             </li>
           ))
         }
       </ol>
+    </div>
+  </section>
+
+  <section class="s-skills light">
+    <div class="wrap s-skills__grid">
+      <div>
+        <p class="mono s-kicker">( Expertise )</p>
+        <ol class="s-skills__expertise">
+          {
+            expertise.map((x, i) => (
+              <li data-reveal>
+                <span class="mono">{String(i + 1).padStart(2, '0')}</span>
+                {x}
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+      <div>
+        <p class="mono s-kicker">( Software )</p>
+        <ul class="s-skills__software mono">
+          {
+            software.map((x) => (
+              <li data-reveal>
+                <span>{x.name}</span>
+                <span class="s-skills__level">{x.level}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
     </div>
   </section>
 </Base>
@@ -175,65 +225,124 @@ const principles = [
     line-height: 1.5;
   }
 
-  .s-principles {
-    padding-block: clamp(100px, 14vw, 200px);
+  .s-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px 24px;
+    margin: 48px 0 0;
+    padding-top: 20px;
+    border-top: 1px solid var(--line-light);
   }
-  .s-principles__kicker {
+  .s-details dt {
+    color: #6b6b67;
+  }
+  .s-details dd {
+    margin: 4px 0 0;
+  }
+  .s-kicker {
     color: var(--grey);
     margin: 0 0 40px;
   }
-  .s-principles__list {
+
+  /* EXPERIENCE */
+  .s-exp {
+    padding-block: clamp(100px, 14vw, 200px);
+  }
+  .s-exp__list {
     list-style: none;
     margin: 0;
     padding: 0;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
     border-top: 1px solid var(--line-dark);
   }
-  .s-principles__list li {
-    padding: 24px clamp(12px, 1.6vw, 28px) 40px 0;
-    border-right: 1px solid var(--line-dark);
+  .s-exp__item {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) 2.2fr 1.6fr;
+    gap: 16px clamp(16px, 3vw, 48px);
+    padding-block: clamp(22px, 3vw, 40px);
+    border-bottom: 1px solid var(--line-dark);
   }
-  .s-principles__list li + li {
-    padding-left: clamp(12px, 1.6vw, 28px);
-  }
-  .s-principles__list li:last-child {
-    border-right: 0;
-  }
-  .s-principles__list li:nth-child(2) { transition-delay: 0.08s; }
-  .s-principles__list li:nth-child(3) { transition-delay: 0.16s; }
-  .s-principles__list li:nth-child(4) { transition-delay: 0.24s; }
-  .s-principles__list h3 {
-    margin: 60px 0 16px;
-    font-weight: 800;
-    font-size: clamp(34px, 3.6vw, 60px);
-    letter-spacing: -0.05em;
-    line-height: 0.9;
-  }
-  .s-principles__list p {
+  .s-exp__dates {
     margin: 0;
-    color: #bdbdb8;
+    padding-top: 0.6em;
+    color: var(--grey);
+  }
+  .s-exp__firm {
+    margin: 0;
+    font-weight: 800;
+    font-size: clamp(30px, 3.8vw, 64px);
+    line-height: 0.92;
+    letter-spacing: -0.05em;
+    text-wrap: balance;
+  }
+  .s-exp__role {
+    margin: 12px 0 0;
+    color: var(--grey);
+  }
+  .s-exp__projects {
+    list-style: none;
+    margin: 0;
+    padding: 0.5em 0 0;
+    display: grid;
+    gap: 6px;
+    align-content: start;
+    font-size: clamp(15px, 1.2vw, 18px);
+  }
+
+  /* SKILLS */
+  .s-skills {
+    padding-block: clamp(100px, 14vw, 200px);
+  }
+  .s-skills__grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: clamp(40px, 6vw, 120px);
+  }
+  .s-skills__expertise,
+  .s-skills__software {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--line-light);
+  }
+  .s-skills__expertise li {
+    display: flex;
+    align-items: baseline;
+    gap: 24px;
+    padding-block: 18px;
+    border-bottom: 1px solid var(--line-light);
+    font-weight: 800;
+    font-size: clamp(30px, 4vw, 68px);
+    letter-spacing: -0.05em;
+    line-height: 1;
+  }
+  .s-skills__expertise .mono {
+    font-weight: 400;
+    color: #6b6b67;
+  }
+  .s-skills__software li {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding-block: 16px;
+    border-bottom: 1px solid var(--line-light);
+    font-size: 13px;
+  }
+  .s-skills__level {
+    color: #6b6b67;
   }
 
   @media (max-width: 860px) {
     .s-hero__scene {
       inset: 0;
     }
-    .s-principal__grid {
+    .s-principal__grid,
+    .s-skills__grid {
       grid-template-columns: 1fr;
     }
-    .s-principles__list {
-      grid-template-columns: 1fr 1fr;
-    }
-    .s-principles__list li {
-      border-right: 0;
-      border-bottom: 1px solid var(--line-dark);
-      padding-inline: 0 12px !important;
-    }
-  }
-  @media (max-width: 520px) {
-    .s-principles__list {
+    .s-exp__item {
       grid-template-columns: 1fr;
     }
-  }
-</style>
+    .s-exp__dates {
+      padding-top: 0;
+    }
+  }</style>

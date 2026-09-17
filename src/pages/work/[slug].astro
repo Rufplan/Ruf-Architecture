@@ -1,11 +1,12 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { render } from 'astro:content';
 import { Picture } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
 import { projectImages } from '../../lib/images';
+import { getProjects, roleOf } from '../../lib/projects';
 
 export async function getStaticPaths() {
-  const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
+  const projects = await getProjects();
   return projects.map((project, i) => ({
     params: { slug: project.id },
     props: { project, index: i, next: projects[(i + 1) % projects.length] },
@@ -14,7 +15,10 @@ export async function getStaticPaths() {
 
 const { project, index, next } = Astro.props;
 const { Content } = await render(project);
+const hasBody = project.body?.trim().length > 0;
 const d = project.data;
+const role = roleOf(project);
+const summary = d.summary ?? `${role.role} at ${role.firm}.`;
 const num = String(index + 1).padStart(2, '0');
 // Photos dropped in images/projects/<slug>/ come first, then any listed in frontmatter.
 const gallery = [
@@ -22,20 +26,23 @@ const gallery = [
   ...d.gallery,
 ];
 const facts = [
+  ['Firm', role.firm],
+  ['Role', role.role],
   ['Location', d.location],
-  ['Year', String(d.year)],
-  ['Typology', d.typology],
-  ['Status', d.status],
+  ['Years', d.years],
+  ['Type', d.typology],
+  ...(d.status ? [['Status', d.status]] : []),
   ...(d.area ? [['Area', d.area]] : []),
 ];
+// Abstract diagrams generated from the massing model — not drawings of the actual building.
 const sheets = [
-  { view: 'plan', code: 'A-101', name: 'Roof plan' },
-  { view: 'elevation', code: 'A-201', name: 'South elevation' },
-  { view: 'axo', code: 'A-301', name: 'Axonometric' },
+  { view: 'plan', code: 'D-01', name: 'Plan diagram' },
+  { view: 'elevation', code: 'D-02', name: 'Elevation diagram' },
+  { view: 'axo', code: 'D-03', name: 'Axonometric diagram' },
 ];
 ---
 
-<Base title={d.title} description={d.summary}>
+<Base title={d.title} description={`${d.title}, ${d.location} — ${role.role} at ${role.firm}.`}>
   <!-- HERO MODEL -->
   <section class="p-hero dark" data-form={d.form} data-seed={d.seed}>
     <div class="p-hero__scene" data-scene data-cursor="Drag"></div>
@@ -44,6 +51,7 @@ const sheets = [
       <a href="/work/" class="link">Work</a>
       <span>/</span>
       <span>{num}</span>
+      <span class="p-hero__note">— Abstract massing diagram</span>
     </div>
 
     <div class="p-hero__controls wrap mono">
@@ -52,7 +60,7 @@ const sheets = [
     </div>
 
     <div class="p-hero__foot wrap">
-      <h1 class="p-hero__title">
+      <h1 class:list={['p-hero__title', d.title.length > 20 && 'is-long']}>
         <span class="mask"><span>{d.title}</span></span>
       </h1>
       <dl class="p-hero__facts mono">
@@ -72,9 +80,17 @@ const sheets = [
   <section class="p-text light">
     <div class="wrap p-text__grid">
       <p class="mono p-text__kicker">( {num} — Project )</p>
-      <p class="p-text__summary" data-reveal>{d.summary}</p>
+      <p class="p-text__summary" data-reveal>{summary}</p>
       <div class="p-text__body" data-reveal>
-        <Content />
+        {hasBody && <Content />}
+        {
+          role.description && (
+            <>
+              <p class="mono p-text__label">( The role — {role.firm}, {role.dates} )</p>
+              <p>{role.description}</p>
+            </>
+          )
+        }
       </div>
       <dl class="p-text__facts mono" data-reveal>
         {
@@ -82,14 +98,6 @@ const sheets = [
             <div>
               <dt>{k}</dt>
               <dd>{v}</dd>
-            </div>
-          ))
-        }
-        {
-          d.credits.map((c) => (
-            <div>
-              <dt>{c.role}</dt>
-              <dd>{c.name}</dd>
             </div>
           ))
         }
@@ -258,6 +266,17 @@ const sheets = [
     line-height: 0.84;
     letter-spacing: -0.07em;
     mix-blend-mode: difference;
+  }
+  .p-hero__title.is-long {
+    font-size: clamp(44px, 8.4vw, 170px);
+  }
+  .p-hero__note {
+    opacity: 0.6;
+  }
+  .p-text__label {
+    margin: 0 0 12px !important;
+    font-size: 11px;
+    color: #6b6b67;
   }
   .is-ready .p-hero__title .mask > span {
     transform: none;
