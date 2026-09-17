@@ -2,7 +2,7 @@
 
 Portfolio website for **Ruf Architecture** — Rufus Kerr, Principal.
 
-Built with [Astro](https://astro.build) (static output) and [Three.js](https://threejs.org). A heavy black-and-white design with procedural architectural massing models drawn live in WebGL.
+Built with [Astro](https://astro.build) (static output) and [Three.js](https://threejs.org). A heavy black-and-white design where each project is built up from the ground in 3D from its own photography.
 
 ## Commands
 
