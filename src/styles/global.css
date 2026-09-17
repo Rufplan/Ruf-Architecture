@@ -114,6 +114,19 @@ picture:has(> .portrait) {
   filter: grayscale(1) contrast(1.08);
 }
 
+/* Photos sit in black and white and bloom to colour when they reach the middle of the screen */
+.tone img,
+.tone video,
+img.tone {
+  filter: grayscale(1) contrast(1.05);
+  transition: filter 1.6s var(--ease), transform 1.6s var(--ease);
+}
+.tone.is-color img,
+.tone.is-color video,
+img.tone.is-color {
+  filter: none;
+}
+
 /* Scroll reveal */
 [data-reveal] {
   opacity: 0;

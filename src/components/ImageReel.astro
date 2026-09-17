@@ -1,0 +1,257 @@
+---
+import { Picture } from 'astro:assets';
+import { coverOf, roleOf, type Project } from '../lib/projects';
+
+interface Props {
+  projects: Project[];
+}
+// Featured projects with photos first, then the rest with photos.
+const items = Astro.props.projects
+  .map((p) => ({ p, cover: coverOf(p) }))
+  .filter((x) => x.cover)
+  .sort((a, b) => Number(b.p.data.featured) - Number(a.p.data.featured));
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+{
+  items.length > 0 && (
+    <section class="reel dark" data-reel aria-label="Projects in pictures">
+      <div class="reel__sticky">
+        <div class="reel__head wrap mono">
+          <span>( In pictures )</span>
+          <span class="reel__rule" aria-hidden="true" />
+          <span>
+            <span data-reel-index>01</span> / {pad(items.length)}
+          </span>
+        </div>
+
+        <div class="reel__track" data-track>
+          <div class="reel__intro">
+            <p class="reel__big">
+              <span>Built</span>
+              <span>
+                <em>&amp;</em> drawn.
+              </span>
+            </p>
+            <p class="mono reel__hint">Scroll →</p>
+          </div>
+          {items.map(({ p, cover }, i) => (
+            <a
+              href={`/work/${p.id}/`}
+              class="reel__item tone tone-x"
+              style={`--ratio: ${Math.min(Math.max(cover!.ratio, 0.7), 2.1).toFixed(3)}`}
+              data-cursor="View"
+            >
+              <Picture
+                src={cover!.src}
+                alt={p.data.title}
+                formats={['avif', 'webp']}
+                widths={[800, 1280, 1920].filter((w) => w <= cover!.src.width).concat(cover!.src.width < 800 ? [cover!.src.width] : [])}
+                sizes="(max-width: 760px) 90vw, 70vw"
+              />
+              <span class="reel__meta">
+                <span class="mono">{pad(i + 1)}</span>
+                <span class="reel__title">{p.data.title}</span>
+                <span class="mono">
+                  {roleOf(p).firm} · {p.data.years}
+                </span>
+              </span>
+            </a>
+          ))}
+        </div>
+
+        <div class="reel__progress" aria-hidden="true">
+          <span data-progress />
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<script>
+  const reel = document.querySelector<HTMLElement>('[data-reel]');
+  if (reel) {
+    const track = reel.querySelector<HTMLElement>('[data-track]')!;
+    const bar = reel.querySelector<HTMLElement>('[data-progress]')!;
+    const indexEl = reel.querySelector<HTMLElement>('[data-reel-index]')!;
+    const items = [...reel.querySelectorAll<HTMLElement>('.reel__item')];
+    const pinned = matchMedia('(min-width: 761px)');
+    let distance = 0;
+
+    const layout = () => {
+      if (!pinned.matches) {
+        reel.style.height = '';
+        track.style.transform = '';
+        return;
+      }
+      distance = Math.max(0, track.scrollWidth - window.innerWidth);
+      reel.style.height = `${distance + window.innerHeight}px`;
+      update();
+    };
+
+    const update = () => {
+      if (!pinned.matches) return;
+      const rect = reel.getBoundingClientRect();
+      const p = Math.min(1, Math.max(0, -rect.top / Math.max(1, distance)));
+      track.style.transform = `translate3d(${-p * distance}px, 0, 0)`;
+      bar.style.transform = `scaleX(${p})`;
+    };
+
+    // Colour the photo nearest the centre of the screen; track which one it is.
+    const tone = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          e.target.classList.toggle('is-color', e.isIntersecting);
+          if (e.isIntersecting) indexEl.textContent = String(items.indexOf(e.target as HTMLElement) + 1).padStart(2, '0');
+        }
+      },
+      { rootMargin: '-10% -38% -10% -38%' },
+    );
+    items.forEach((el) => tone.observe(el));
+
+    addEventListener('scroll', update, { passive: true });
+    addEventListener('resize', layout);
+    pinned.addEventListener('change', layout);
+    // Images change the track width as they load.
+    new ResizeObserver(layout).observe(track);
+    layout();
+  }
+</script>
+
+<style>
+  .reel {
+    position: relative;
+  }
+  .reel__sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100svh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(16px, 2.5vh, 32px);
+  }
+  .reel__head {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--grey);
+    padding-top: 60px;
+  }
+  .reel__rule {
+    flex: 1;
+    height: 1px;
+    background: var(--line-dark);
+  }
+  .reel__track {
+    display: flex;
+    align-items: stretch;
+    gap: clamp(16px, 2vw, 32px);
+    width: max-content;
+    height: 68vh;
+    padding-inline: var(--gutter);
+    will-change: transform;
+  }
+  .reel__intro {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: clamp(260px, 30vw, 520px);
+    padding-right: clamp(16px, 4vw, 80px);
+  }
+  .reel__big {
+    margin: 0;
+    font-weight: 900;
+    font-size: clamp(64px, 9vw, 170px);
+    line-height: 0.84;
+    letter-spacing: -0.07em;
+  }
+  .reel__big span {
+    display: block;
+  }
+  .reel__big em {
+    font-style: normal;
+    font-weight: 300;
+  }
+  .reel__hint {
+    margin: 0;
+    color: var(--grey);
+  }
+  .reel__item {
+    position: relative;
+    display: block;
+    height: 100%;
+    aspect-ratio: var(--ratio);
+    max-width: 88vw;
+    overflow: hidden;
+    flex: none;
+  }
+  .reel__item :global(picture),
+  .reel__item :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .reel__item :global(img) {
+    transform: scale(1.08);
+  }
+  .reel__item.is-color :global(img),
+  .reel__item:hover :global(img) {
+    filter: none;
+    transform: none;
+  }
+  .reel__meta {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: grid;
+    gap: 6px;
+    padding: 60px 20px 18px;
+    background: linear-gradient(to top, rgba(5, 5, 5, 0.75), rgba(5, 5, 5, 0));
+    color: var(--white);
+  }
+  .reel__title {
+    font-weight: 800;
+    font-size: clamp(28px, 3.4vw, 60px);
+    line-height: 0.92;
+    letter-spacing: -0.05em;
+  }
+  .reel__progress {
+    margin-inline: var(--gutter);
+    height: 1px;
+    background: var(--line-dark);
+  }
+  .reel__progress span {
+    display: block;
+    height: 100%;
+    background: var(--white);
+    transform-origin: left;
+    transform: scaleX(0);
+  }
+
+  /* Phones: a native swipeable strip instead of a pinned scroll */
+  @media (max-width: 760px) {
+    .reel__sticky {
+      position: static;
+      height: auto;
+      padding-block: 80px;
+    }
+    .reel__track {
+      width: auto;
+      height: 62vh;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+    .reel__item {
+      scroll-snap-align: center;
+    }
+    .reel__progress {
+      display: none;
+    }
+  }
+</style>

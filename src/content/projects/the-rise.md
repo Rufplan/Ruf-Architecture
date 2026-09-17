@@ -8,4 +8,5 @@ typology: "Commercial"
 featured: true
 form: cluster
 seed: 51
+cover: "The Rise 06.jpg"
 ---

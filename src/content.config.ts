@@ -20,8 +20,13 @@ const projects = defineCollection({
     // Abstract Three.js massing diagram used as the project's graphic.
     form: z.enum(['tower', 'slab', 'courtyard', 'cantilever', 'terrace', 'cluster']),
     seed: z.number().default(1),
-    // Optional extra images from /public. Photos in images/projects/<slug>/ are picked up automatically.
-    gallery: z.array(z.object({ src: z.string(), alt: z.string(), caption: z.string().optional() })).default([]),
+    // Photos and videos in images/projects/<slug>/ are picked up automatically.
+    // cover: filename of the lead image (defaults to the first landscape image).
+    cover: z.string().optional(),
+    // exclude: filenames in the folder to leave off the site.
+    exclude: z.array(z.string()).default([]),
+    // captions: { "filename.jpg": "Caption" }
+    captions: z.record(z.string(), z.string()).default({}),
   }),
 });
 

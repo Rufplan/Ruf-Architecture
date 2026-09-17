@@ -8,4 +8,5 @@ typology: "Commercial"
 featured: false
 form: courtyard
 seed: 61
+cover: "Fortinet 01.jpg"
 ---

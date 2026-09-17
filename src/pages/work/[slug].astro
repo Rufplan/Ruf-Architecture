@@ -1,9 +1,9 @@
 ---
 import { render } from 'astro:content';
-import { Picture } from 'astro:assets';
+import { Picture, getImage } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
-import { projectImages } from '../../lib/images';
-import { getProjects, roleOf } from '../../lib/projects';
+import type { Media } from '../../lib/images';
+import { getProjects, roleOf, mediaOf, coverOf, coverThumb } from '../../lib/projects';
 
 export async function getStaticPaths() {
   const projects = await getProjects();
@@ -20,11 +20,63 @@ const d = project.data;
 const role = roleOf(project);
 const summary = d.summary ?? `${role.role} at ${role.firm}.`;
 const num = String(index + 1).padStart(2, '0');
-// Photos dropped in images/projects/<slug>/ come first, then any listed in frontmatter.
-const gallery = [
-  ...projectImages(project.id).map((img) => ({ src: img.src, alt: img.alt || d.title, caption: img.alt })),
-  ...d.gallery,
-];
+
+const media = mediaOf(project);
+const cover = coverOf(project);
+const nextCover = await coverThumb(next, 2000);
+
+// Lay the remaining media out editorially: full-bleed, wide, justified pairs, and offset singles.
+// Sizes respect each file's resolution so small images are never blown up.
+type Row = { type: 'bleed' | 'wide' | 'pair' | 'single'; items: Media[] };
+const rest = media.filter((m) => m.file !== cover?.file);
+const rows: Row[] = [];
+{
+  const isImage = (m?: Media): m is Extract<Media, { kind: 'image' }> => !!m && m.kind === 'image';
+  const canBleed = (m: Media) => isImage(m) && m.src.width >= 1600;
+  const canWide = (m: Media) => isImage(m) && m.src.width >= 1100;
+  let beat = 0;
+  for (let i = 0; i < rest.length; ) {
+    const m = rest[i];
+    const n = rest[i + 1];
+    if (m.kind === 'video') {
+      rows.push({ type: 'bleed', items: [m] });
+      i++;
+    } else if (m.ratio < 1.25 || !canWide(m)) {
+      // Upright or low-resolution: pair with the next still, or sit alone at half width.
+      if (isImage(n)) {
+        rows.push({ type: 'pair', items: [m, n] });
+        i += 2;
+      } else {
+        rows.push({ type: 'single', items: [m] });
+        i++;
+      }
+    } else {
+      const b = beat++ % 3;
+      if (b === 0) {
+        rows.push({ type: canBleed(m) ? 'bleed' : 'wide', items: [m] });
+        i++;
+      } else if (b === 1 && isImage(n) && n.ratio >= 1.25) {
+        rows.push({ type: 'pair', items: [m, n] });
+        i += 2;
+      } else {
+        rows.push({ type: 'wide', items: [m] });
+        i++;
+      }
+    }
+  }
+}
+
+// Full-size sources for the lightbox, in page order.
+const stills = rest.filter((m): m is Extract<Media, { kind: 'image' }> => m.kind === 'image');
+const lightbox = await Promise.all(
+  stills.map(async (m) => ({
+    src: (await getImage({ src: m.src, width: Math.min(2400, m.src.width), format: 'webp' })).src,
+    caption: m.caption ?? '',
+  })),
+);
+const lightboxIndex = (m: Media) => stills.indexOf(m as (typeof stills)[number]);
+const altFor = (m: Media) => (m.caption ? `${d.title} — ${m.caption}` : `${d.title}, image ${media.findIndex((x) => x.file === m.file) + 1}`);
+
 const facts = [
   ['Firm', role.firm],
   ['Role', role.role],
@@ -43,38 +95,70 @@ const sheets = [
 ---
 
 <Base title={d.title} description={`${d.title}, ${d.location} — ${role.role} at ${role.firm}.`}>
-  <!-- HERO MODEL -->
-  <section class="p-hero dark" data-form={d.form} data-seed={d.seed}>
-    <div class="p-hero__scene" data-scene data-cursor="Drag"></div>
-
-    <div class="p-hero__crumb wrap mono">
-      <a href="/work/" class="link">Work</a>
-      <span>/</span>
-      <span>{num}</span>
-      <span class="p-hero__note">— Abstract massing diagram</span>
-    </div>
-
-    <div class="p-hero__controls wrap mono">
-      <button type="button" data-explode aria-pressed="false">[ Explode ]</button>
-      <button type="button" data-spin aria-pressed="true">[ Rotate ]</button>
-    </div>
-
-    <div class="p-hero__foot wrap">
-      <h1 class:list={['p-hero__title', d.title.length > 20 && 'is-long']}>
-        <span class="mask"><span>{d.title}</span></span>
-      </h1>
-      <dl class="p-hero__facts mono">
-        {
-          facts.slice(0, 4).map(([k, v]) => (
-            <div>
-              <dt>{k}</dt>
-              <dd>{v}</dd>
-            </div>
-          ))
-        }
-      </dl>
-    </div>
-  </section>
+  {
+    cover ? (
+      <section class="p-hero p-hero--image dark">
+        <div class="p-hero__media tone" data-parallax>
+          <Picture
+            src={cover.src}
+            alt={altFor(cover)}
+            formats={['avif', 'webp']}
+            widths={[800, 1280, 1920, 2560].filter((w) => w <= cover.src.width).concat(cover.src.width < 2560 ? [cover.src.width] : [])}
+            sizes={`(orientation: portrait) ${Math.round(cover.ratio * 110)}vh, 110vw`}
+            loading="eager"
+            fetchpriority="high"
+          />
+        </div>
+        <div class="p-hero__shade" aria-hidden="true" />
+        <div class="p-hero__crumb wrap mono">
+          <a href="/work/" class="link">Work</a>
+          <span>/</span>
+          <span>{num}</span>
+        </div>
+        <p class="p-hero__count wrap mono">{media.length} {media.length === 1 ? 'image' : 'images'}</p>
+        <div class="p-hero__foot wrap">
+          <h1 class:list={['p-hero__title', d.title.length > 20 && 'is-long']}>
+            <span class="mask"><span>{d.title}</span></span>
+          </h1>
+          <dl class="p-hero__facts mono">
+            {facts.slice(0, 4).map(([k, v]) => (
+              <div>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+    ) : (
+      <section class="p-hero dark" data-model data-form={d.form} data-seed={d.seed}>
+        <div class="p-hero__scene" data-scene data-cursor="Drag" />
+        <div class="p-hero__crumb wrap mono">
+          <a href="/work/" class="link">Work</a>
+          <span>/</span>
+          <span>{num}</span>
+          <span class="p-hero__note">— Abstract massing diagram</span>
+        </div>
+        <div class="p-hero__controls wrap mono">
+          <button type="button" data-explode aria-pressed="false">[ Explode ]</button>
+          <button type="button" data-spin aria-pressed="true">[ Rotate ]</button>
+        </div>
+        <div class="p-hero__foot wrap">
+          <h1 class:list={['p-hero__title p-hero__title--blend', d.title.length > 20 && 'is-long']}>
+            <span class="mask"><span>{d.title}</span></span>
+          </h1>
+          <dl class="p-hero__facts mono">
+            {facts.slice(0, 4).map(([k, v]) => (
+              <div>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+    )
+  }
 
   <!-- TEXT -->
   <section class="p-text light">
@@ -105,13 +189,50 @@ const sheets = [
     </div>
   </section>
 
-  <!-- DRAWING SET generated from the model -->
-  <section class="p-sheets light" aria-label="Drawings">
+  <!-- GALLERY -->
+  {
+    rows.length > 0 && (
+      <section class="p-gallery dark" aria-label="Images">
+        {rows.map((row) => (
+          <div class:list={['row', `row--${row.type}`, row.type !== 'bleed' && 'wrap']}>
+            {row.items.map((m) => (
+              <figure
+                class="shot tone"
+                style={row.type === 'pair' ? `flex-grow: ${m.ratio.toFixed(3)}` : undefined}
+                data-reveal
+              >
+                {m.kind === 'video' ? (
+                  <video src={m.src} muted loop playsinline preload="metadata" data-autoplay aria-label={altFor(m)} />
+                ) : (
+                  <button type="button" class="shot__open" data-open={lightboxIndex(m)} data-cursor="View" aria-label={`Enlarge: ${altFor(m)}`}>
+                    <Picture
+                      src={m.src}
+                      alt={altFor(m)}
+                      formats={['avif', 'webp']}
+                      widths={[640, 1024, 1600, 2400].filter((w) => w <= m.src.width).concat(m.src.width < 640 ? [m.src.width] : [])}
+                      sizes={row.type === 'bleed' ? '100vw' : row.type === 'pair' ? '(max-width: 760px) 100vw, 50vw' : row.type === 'single' ? '(max-width: 760px) 100vw, 50vw' : '100vw'}
+                    />
+                  </button>
+                )}
+                {m.caption && <figcaption class="mono">{m.caption}</figcaption>}
+              </figure>
+            ))}
+          </div>
+        ))}
+      </section>
+    )
+  }
+
+  <!-- MASSING DIAGRAMS generated from the model -->
+  <section class="p-sheets light" aria-label="Massing diagrams" data-sheets data-form={d.form} data-seed={d.seed}>
+    <div class="wrap">
+      <p class="mono p-sheets__kicker">( Massing diagrams — abstract, generated )</p>
+    </div>
     <div class="wrap p-sheets__grid">
       {
         sheets.map((s, i) => (
           <figure class:list={['sheet', i === 2 && 'sheet--wide']} data-reveal>
-            <canvas data-view={s.view} aria-label={`${s.name} of ${d.title}`} role="img" />
+            <canvas data-view={s.view} aria-label={`Abstract ${s.name.toLowerCase()}`} role="img" />
             <figcaption class="sheet__block mono">
               <span>{s.code}</span>
               <span>{s.name}</span>
@@ -124,59 +245,48 @@ const sheets = [
     </div>
   </section>
 
-  <!-- GALLERY (photography / renders) -->
-  {
-    gallery.length > 0 && (
-      <section class="p-gallery dark">
-        <div class="wrap p-gallery__grid">
-          {gallery.map((img, i) => (
-            <figure class:list={['shot', i % 3 === 0 && 'shot--full']} data-reveal>
-              {typeof img.src === 'string' ? (
-                <img src={img.src} alt={img.alt} loading="lazy" decoding="async" />
-              ) : (
-                <Picture
-                  src={img.src}
-                  alt={img.alt}
-                  formats={['avif', 'webp']}
-                  widths={i % 3 === 0 ? [800, 1600, 2400] : [600, 1000, 1400]}
-                  sizes={i % 3 === 0 ? '100vw' : '(max-width: 860px) 100vw, 50vw'}
-                />
-              )}
-              {img.caption && <figcaption class="mono">{img.caption}</figcaption>}
-            </figure>
-          ))}
-        </div>
-      </section>
-    )
-  }
-
   <!-- NEXT -->
-  <a href={`/work/${next.id}/`} class="p-next dark" data-cursor="Next">
+  <a href={`/work/${next.id}/`} class:list={['p-next dark', nextCover && 'p-next--image']} data-cursor="Next">
+    {nextCover && <img class="p-next__bg" src={nextCover} alt="" loading="lazy" decoding="async" />}
     <span class="wrap p-next__label mono">Next project →</span>
     <span class="wrap p-next__title">{next.data.title}</span>
   </a>
+
+  {
+    lightbox.length > 0 && (
+      <dialog class="lb" aria-label="Image viewer" data-images={JSON.stringify(lightbox)}>
+        <img class="lb__img" alt="" />
+        <div class="lb__bar wrap mono">
+          <span class="lb__count" />
+          <span class="lb__caption" />
+          <span class="lb__nav">
+            <button type="button" data-prev aria-label="Previous image">← Prev</button>
+            <button type="button" data-next aria-label="Next image">Next →</button>
+            <button type="button" data-close aria-label="Close">Close ×</button>
+          </span>
+        </div>
+      </dialog>
+    )
+  }
 </Base>
 
 <script>
-  import { mountMassing, SnapshotRenderer, type Form, type View } from '../../scripts/massing';
+  import { mountMassing, SnapshotRenderer, reducedMotion, type Form, type View } from '../../scripts/massing';
 
-  const hero = document.querySelector<HTMLElement>('.p-hero');
-  const container = hero?.querySelector<HTMLElement>('[data-scene]');
-  if (hero && container) {
-    const form = hero.dataset.form as Form;
-    const seed = Number(hero.dataset.seed);
-
+  // Interactive model hero (projects without photos)
+  const modelHero = document.querySelector<HTMLElement>('[data-model]');
+  const container = modelHero?.querySelector<HTMLElement>('[data-scene]');
+  if (modelHero && container) {
     const { stage } = mountMassing(container, {
-      form,
-      seed,
+      form: modelHero.dataset.form as Form,
+      seed: Number(modelHero.dataset.seed),
       palette: { fg: 0xf3f3f0, bg: 0x050505 },
       build: true,
       draggable: true,
       zoom: 0.95,
     });
-
-    const explodeBtn = hero.querySelector<HTMLButtonElement>('[data-explode]')!;
-    const spinBtn = hero.querySelector<HTMLButtonElement>('[data-spin]')!;
+    const explodeBtn = modelHero.querySelector<HTMLButtonElement>('[data-explode]')!;
+    const spinBtn = modelHero.querySelector<HTMLButtonElement>('[data-spin]')!;
     const baseSpin = stage.spinSpeed;
     explodeBtn.addEventListener('click', () => {
       const on = explodeBtn.getAttribute('aria-pressed') !== 'true';
@@ -188,22 +298,88 @@ const sheets = [
       spinBtn.setAttribute('aria-pressed', String(on));
       stage.spinSpeed = on ? baseSpin : 0;
     });
+  }
 
-    // Drawing sheets: one shared context renders plan / elevation / axo.
+  // Image hero parallax
+  const parallax = document.querySelector<HTMLElement>('[data-parallax]');
+  if (parallax && !reducedMotion()) {
+    const onScroll = () => {
+      const y = Math.min(window.scrollY, window.innerHeight);
+      parallax.style.transform = `translate3d(0, ${y * 0.35}px, 0) scale(${1.04 + y / window.innerHeight * 0.06})`;
+    };
+    addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+
+  // Drawing sheets: one shared context renders plan / elevation / axo.
+  const sheets = document.querySelector<HTMLElement>('[data-sheets]');
+  if (sheets) {
     const snap = new SnapshotRenderer();
-    const canvases = [...document.querySelectorAll<HTMLCanvasElement>('.sheet canvas')];
+    const canvases = [...sheets.querySelectorAll<HTMLCanvasElement>('canvas')];
     const palette = { fg: 0x050505, bg: 0xf3f3f0 };
     const draw = () => {
       for (const c of canvases) {
-        const s = snap.stage(form, seed, palette, c.dataset.view as View, 0.9);
-        snap.draw(c, s);
+        snap.draw(c, snap.stage(sheets.dataset.form as Form, Number(sheets.dataset.seed), palette, c.dataset.view as View, 0.9));
       }
     };
-    requestAnimationFrame(draw);
+    // Draw when the section approaches the viewport.
+    new IntersectionObserver(([e], obs) => {
+      if (e.isIntersecting) {
+        draw();
+        obs.disconnect();
+      }
+    }, { rootMargin: '400px 0px' }).observe(sheets);
     let t = 0;
     addEventListener('resize', () => {
       clearTimeout(t);
       t = window.setTimeout(draw, 200);
+    });
+  }
+
+  // Videos play only while on screen
+  const videos = document.querySelectorAll<HTMLVideoElement>('video[data-autoplay]');
+  const vio = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      const v = e.target as HTMLVideoElement;
+      if (e.isIntersecting && !reducedMotion()) v.play().catch(() => {});
+      else v.pause();
+    }
+  }, { threshold: 0.25 });
+  videos.forEach((v) => vio.observe(v));
+
+  // Lightbox
+  const lb = document.querySelector<HTMLDialogElement>('.lb');
+  if (lb) {
+    const images: { src: string; caption: string }[] = JSON.parse(lb.dataset.images!);
+    const img = lb.querySelector<HTMLImageElement>('.lb__img')!;
+    const count = lb.querySelector<HTMLElement>('.lb__count')!;
+    const caption = lb.querySelector<HTMLElement>('.lb__caption')!;
+    let current = 0;
+    const show = (i: number) => {
+      current = (i + images.length) % images.length;
+      img.src = images[current].src;
+      count.textContent = `${String(current + 1).padStart(2, '0')} / ${String(images.length).padStart(2, '0')}`;
+      caption.textContent = images[current].caption;
+    };
+    document.querySelectorAll<HTMLButtonElement>('[data-open]').forEach((btn) =>
+      btn.addEventListener('click', () => {
+        show(Number(btn.dataset.open));
+        lb.showModal();
+      }),
+    );
+    lb.querySelector('[data-prev]')!.addEventListener('click', () => show(current - 1));
+    lb.querySelector('[data-next]')!.addEventListener('click', () => show(current + 1));
+    lb.querySelector('[data-close]')!.addEventListener('click', () => lb.close());
+    img.addEventListener('click', () => show(current + 1));
+    lb.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') show(current + 1);
+      if (e.key === 'ArrowLeft') show(current - 1);
+    });
+    let startX: number | null = null;
+    lb.addEventListener('pointerdown', (e) => (startX = e.clientX));
+    lb.addEventListener('pointerup', (e) => {
+      if (startX !== null && Math.abs(e.clientX - startX) > 50) show(current + (e.clientX < startX ? 1 : -1));
+      startX = null;
     });
   }
 </script>
@@ -222,6 +398,25 @@ const sheets = [
     inset: 0;
     touch-action: pan-y;
   }
+  .p-hero__media {
+    position: absolute;
+    inset: 0;
+    will-change: transform;
+  }
+  .p-hero__media :global(picture),
+  .p-hero__media :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .p-hero__shade {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to top, rgba(5, 5, 5, 0.92) 0%, rgba(5, 5, 5, 0.55) 30%, rgba(5, 5, 5, 0) 58%),
+      linear-gradient(to bottom, rgba(5, 5, 5, 0.55) 0%, rgba(5, 5, 5, 0) 22%);
+  }
   .p-hero__crumb {
     position: absolute;
     top: 76px;
@@ -229,6 +424,18 @@ const sheets = [
     display: flex;
     gap: 10px;
     color: var(--grey);
+  }
+  .p-hero--image .p-hero__crumb {
+    color: var(--white);
+  }
+  .p-hero__note {
+    opacity: 0.6;
+  }
+  .p-hero__count {
+    position: absolute;
+    top: 76px;
+    right: 0;
+    margin: 0;
   }
   .p-hero__controls {
     position: absolute;
@@ -265,18 +472,12 @@ const sheets = [
     font-size: clamp(56px, 12.5vw, 240px);
     line-height: 0.84;
     letter-spacing: -0.07em;
+  }
+  .p-hero__title--blend {
     mix-blend-mode: difference;
   }
   .p-hero__title.is-long {
     font-size: clamp(44px, 8.4vw, 170px);
-  }
-  .p-hero__note {
-    opacity: 0.6;
-  }
-  .p-text__label {
-    margin: 0 0 12px !important;
-    font-size: 11px;
-    color: #6b6b67;
   }
   .is-ready .p-hero__title .mask > span {
     transform: none;
@@ -290,9 +491,15 @@ const sheets = [
     padding-top: 16px;
     border-top: 1px solid var(--line-dark);
   }
+  .p-hero--image .p-hero__facts {
+    border-top-color: rgba(243, 243, 240, 0.4);
+  }
   .p-hero__facts dt,
   .p-text__facts dt {
     color: var(--grey);
+  }
+  .p-hero--image .p-hero__facts dt {
+    color: rgba(243, 243, 240, 0.65);
   }
   .p-hero__facts dd,
   .p-text__facts dd {
@@ -301,7 +508,7 @@ const sheets = [
 
   /* TEXT */
   .p-text {
-    padding-block: clamp(90px, 12vw, 180px) clamp(40px, 6vw, 80px);
+    padding-block: clamp(90px, 12vw, 180px);
   }
   .p-text__grid {
     display: grid;
@@ -329,6 +536,11 @@ const sheets = [
   .p-text__body :global(p) {
     margin: 0 0 1.1em;
   }
+  .p-text__label {
+    margin: 0 0 12px !important;
+    font-size: 11px;
+    color: #6b6b67;
+  }
   .p-text__facts {
     grid-column: 1 / 5;
     grid-row: 3;
@@ -347,9 +559,71 @@ const sheets = [
     color: #6b6b67;
   }
 
+  /* GALLERY */
+  .p-gallery {
+    display: grid;
+    gap: clamp(16px, 2.4vw, 40px);
+    padding-block: clamp(16px, 2.4vw, 40px) clamp(90px, 12vw, 180px);
+  }
+  .row {
+    display: flex;
+    gap: clamp(16px, 2.4vw, 40px);
+  }
+  .shot {
+    position: relative;
+    margin: 0;
+    min-width: 0;
+    flex: 1 1 0;
+    overflow: hidden;
+  }
+  .shot__open {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    overflow: hidden;
+  }
+  .shot :global(img),
+  .shot video {
+    display: block;
+    width: 100%;
+    height: auto;
+    transform: scale(1.06);
+  }
+  .shot.is-color :global(img),
+  .shot.is-color video {
+    transform: none;
+  }
+  .row--bleed .shot :global(img),
+  .row--bleed .shot video {
+    max-height: 115vh;
+    object-fit: cover;
+  }
+  .row--single {
+    justify-content: flex-end;
+  }
+  .row--single:nth-of-type(even) {
+    justify-content: flex-start;
+  }
+  .row--single .shot {
+    flex: 0 1 46%;
+  }
+  .shot figcaption {
+    padding-top: 12px;
+    color: var(--grey);
+  }
+  .row--bleed .shot figcaption {
+    padding-inline: var(--gutter);
+  }
+
   /* SHEETS */
   .p-sheets {
-    padding-bottom: clamp(90px, 12vw, 180px);
+    padding-block: clamp(90px, 12vw, 180px);
+  }
+  .p-sheets__kicker {
+    margin: 0 0 32px;
   }
   .p-sheets__grid {
     display: grid;
@@ -383,42 +657,42 @@ const sheets = [
     border-right: 0;
   }
 
-  /* GALLERY */
-  .p-gallery {
-    padding-block: clamp(60px, 8vw, 120px);
-  }
-  .p-gallery__grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: clamp(16px, 2vw, 32px);
-  }
-  .shot {
-    margin: 0;
-  }
-  .shot--full {
-    grid-column: 1 / -1;
-  }
-  .shot :global(img) {
-    width: 100%;
-    height: auto;
-    filter: grayscale(1) contrast(1.08);
-  }
-  .shot figcaption {
-    padding-top: 10px;
-    color: var(--grey);
-  }
-
   /* NEXT */
   .p-next {
+    position: relative;
     display: block;
     padding-block: clamp(70px, 10vw, 150px);
     border-top: 1px solid var(--line-dark);
     overflow: hidden;
   }
+  .p-next--image {
+    padding-block: clamp(140px, 22vw, 360px) clamp(40px, 5vw, 80px);
+  }
+  .p-next__bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(1) brightness(0.45);
+    transform: scale(1.05);
+    transition: filter 1.2s var(--ease), transform 1.6s var(--ease);
+  }
+  .p-next:hover .p-next__bg {
+    filter: grayscale(0) brightness(0.6);
+    transform: none;
+  }
+  .p-next__label,
+  .p-next__title {
+    position: relative;
+  }
   .p-next__label {
     display: block;
     color: var(--grey);
     margin-bottom: 20px;
+  }
+  .p-next--image .p-next__label {
+    color: var(--white);
   }
   .p-next__title {
     display: block;
@@ -433,6 +707,75 @@ const sheets = [
     font-weight: 300;
   }
 
+  /* LIGHTBOX */
+  .lb {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--black);
+    color: var(--white);
+  }
+  /* The custom cursor can't render above the top-layer dialog */
+  .lb,
+  .lb * {
+    cursor: default !important;
+  }
+  .lb button {
+    cursor: pointer !important;
+  }
+  .lb::backdrop {
+    background: var(--black);
+  }
+  .lb[open] {
+    display: grid;
+    grid-template-rows: 1fr auto;
+    animation: lb-in 0.5s var(--ease);
+  }
+  @keyframes lb-in {
+    from {
+      opacity: 0;
+    }
+  }
+  .lb__img {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: contain;
+    padding: clamp(12px, 3vw, 48px) clamp(12px, 3vw, 48px) 0;
+  }
+  .lb__bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding-block: 18px;
+  }
+  .lb__caption {
+    flex: 1;
+    color: var(--grey);
+  }
+  .lb__nav {
+    display: flex;
+    gap: 20px;
+  }
+  .lb__nav button {
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: var(--white);
+    background: none;
+    border: 0;
+    padding: 6px 0;
+  }
+  .lb__nav button:hover {
+    opacity: 0.6;
+  }
+
   @media (max-width: 860px) {
     .p-hero__facts {
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -443,8 +786,7 @@ const sheets = [
       grid-column: 1 / -1;
       grid-row: auto;
     }
-    .p-sheets__grid,
-    .p-gallery__grid {
+    .p-sheets__grid {
       grid-template-columns: 1fr;
     }
     .sheet--wide canvas {
@@ -454,6 +796,17 @@ const sheets = [
       grid-template-columns: auto 1fr auto;
     }
     .sheet__block span:nth-child(3) {
+      display: none;
+    }
+  }
+  @media (max-width: 760px) {
+    .row {
+      flex-direction: column;
+    }
+    .row--single .shot {
+      flex-basis: auto;
+    }
+    .lb__caption {
       display: none;
     }
   }

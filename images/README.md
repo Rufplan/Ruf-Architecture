@@ -1,29 +1,38 @@
 # Images
 
-Drop photos here. The site picks them up automatically and resizes and compresses them at build time, so full-size originals are fine.
+Drop photos and videos here. The site picks them up automatically and resizes and compresses them when it builds, so full-size originals are fine.
 
 ```
 images/
   studio/
     portrait.jpg              ← Rufus Kerr portrait (home + studio pages)
   projects/
-    monolith-house/           ← one folder per project, named to match
-    lantern-tower/               src/content/projects/<name>.md
+    the-rise/                 ← one folder per project, named to match
+    lifesource/                  src/content/projects/<name>.md
     ...
 ```
 
-## Project photos
+## Project photos and videos
 
-- Put them in `images/projects/<project-name>/`.
-- **They show in filename order**, so number them: `01-street-view.jpg`, `02-living-room.jpg`, …
-- The filename becomes the caption and alt text: `03-north-facade-at-dusk.jpg` → "North facade at dusk".
-- Every third photo (1st, 4th, 7th…) is shown full width; the rest sit in pairs.
-- Formats: `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`.
+- Formats: `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`, and `.mp4` / `.webm` for video.
+- Images show in **filename order**, so number them: `01 street.jpg`, `02 lobby.jpg`, …
+- Layout is automatic. Big landscape images go full width, upright and smaller images sit in pairs, and videos play full width on loop. Files under ~1100px wide are never stretched across the screen, so larger originals give you bigger images.
+- Click any image on the site to open it full screen.
 
-## New project
+## Choosing the lead image, hiding files, captions
 
-Create the Markdown file in `src/content/projects/` first (e.g. `beach-house.md`), then make a matching folder `images/projects/beach-house/`.
+These go in the project's Markdown file (`src/content/projects/<name>.md`), between the `---` lines:
+
+```yaml
+cover: "Malaysia 03.jpeg"          # full-screen image at the top of the page, and on the home page reel
+exclude:                           # files in the folder to leave off the site
+  - "Malaysia 21.jpg"
+captions:                          # optional captions under images
+  "Interior Entry View.jpg": "Entry"
+```
+
+Without `cover`, the first landscape image is used.
 
 ## Portrait
 
-Save as `images/studio/portrait.jpg` (or `.png` / `.webp`). A 4:5 portrait crop looks best. It's shown in greyscale.
+Save as `images/studio/portrait.jpg` (or `.png` / `.webp`). A 4:5 portrait crop looks best.

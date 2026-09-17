@@ -8,4 +8,5 @@ typology: "National Park"
 featured: false
 form: terrace
 seed: 31
+cover: "Yosemite Housing 03.jpeg"
 ---

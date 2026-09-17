@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import WorkList from '../components/WorkList.astro';
 import Marquee from '../components/Marquee.astro';
+import ImageReel from '../components/ImageReel.astro';
 import { site } from '../site.config';
 import { Picture } from 'astro:assets';
 import { portrait } from '../lib/images';
@@ -60,6 +61,8 @@ const statement =
       </div>
     </div>
   </section>
+
+  <ImageReel projects={allProjects} />
 
   <Marquee words={['Mass', 'Light', 'Line', 'Shadow', 'Space']} />
 

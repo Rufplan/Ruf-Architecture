@@ -8,4 +8,5 @@ typology: "Commercial"
 featured: true
 form: slab
 seed: 42
+cover: "BGM - 01.jpg"
 ---

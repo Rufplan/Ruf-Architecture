@@ -99,6 +99,13 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
       );
       document.querySelectorAll('[data-reveal], .mask').forEach((el) => io.observe(el));
 
+      // Black & white → colour for photos crossing the middle band of the viewport
+      const tone = new IntersectionObserver(
+        (entries) => entries.forEach((e) => e.target.classList.toggle('is-color', e.isIntersecting)),
+        { rootMargin: '-30% 0px -30% 0px' },
+      );
+      document.querySelectorAll('.tone:not(.tone-x)').forEach((el) => tone.observe(el));
+
       // Custom cursor (fine pointers only)
       const cursor = document.querySelector<HTMLElement>('.cursor');
       const label = document.querySelector<HTMLElement>('.cursor__label');

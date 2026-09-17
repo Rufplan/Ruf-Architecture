@@ -8,4 +8,7 @@ typology: "Commercial"
 featured: true
 form: tower
 seed: 41
+cover: "Transamerica Building 05.jpg"
+exclude:
+  - "Malaysia 21.jpg"
 ---
