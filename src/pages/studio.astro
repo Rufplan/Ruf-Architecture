@@ -2,6 +2,10 @@
 import Base from '../layouts/Base.astro';
 import Marquee from '../components/Marquee.astro';
 import { site } from '../site.config';
+import { Picture } from 'astro:assets';
+import { portrait } from '../lib/images';
+
+const portraitImg = portrait();
 
 // TODO: replace with the studio's own principles.
 const principles = [
@@ -28,7 +32,13 @@ const principles = [
     <div class="wrap s-principal__grid">
       <div class="s-principal__portrait" data-reveal>
         <div class="s-principal__frame">
-          <span class="mono">Portrait — {site.principal}</span>
+          {
+            portraitImg ? (
+              <Picture src={portraitImg} alt={`${site.principal}, ${site.principalTitle}`} formats={['avif', 'webp']} widths={[480, 800, 1200]} sizes="(max-width: 860px) 100vw, 40vw" class="portrait" />
+            ) : (
+              <span class="mono">Portrait — {site.principal}</span>
+            )
+          }
         </div>
       </div>
       <div class="s-principal__body">

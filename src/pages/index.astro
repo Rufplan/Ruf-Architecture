@@ -4,7 +4,10 @@ import Base from '../layouts/Base.astro';
 import WorkList from '../components/WorkList.astro';
 import Marquee from '../components/Marquee.astro';
 import { site } from '../site.config';
+import { Picture } from 'astro:assets';
+import { portrait } from '../lib/images';
 
+const portraitImg = portrait();
 const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
 const statement =
   'We design buildings as instruments of light and shadow — reducing every project to the essential: mass, line, and the space between.';
@@ -80,7 +83,13 @@ const statement =
       <p class="mono principal__kicker">( 03 — Studio )</p>
       <div class="principal__portrait" data-reveal>
         <div class="principal__frame">
-          <span class="mono">Portrait<br />{site.principal}</span>
+          {
+            portraitImg ? (
+              <Picture src={portraitImg} alt={`${site.principal}, ${site.principalTitle}`} formats={['avif', 'webp']} widths={[480, 800, 1200]} sizes="(max-width: 760px) 100vw, 40vw" class="portrait" />
+            ) : (
+              <span class="mono">Portrait<br />{site.principal}</span>
+            )
+          }
         </div>
       </div>
       <div class="principal__body">

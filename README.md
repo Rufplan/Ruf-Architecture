@@ -28,7 +28,8 @@ src/
     work/index.astro      Project index grid
     work/[slug].astro     Project page: interactive model, text, generated drawing set, gallery
     studio.astro          Studio / principal / principles
-public/                   Static files (favicon, project images)
+images/                   Drop project photos + portrait here (auto-optimised)
+public/                   Static files (favicon)
 ```
 
 ## Adding a project
@@ -47,10 +48,6 @@ area: "300 m²"
 summary: "One-sentence description."
 form: tower              # tower | slab | courtyard | cantilever | terrace | cluster
 seed: 12                 # change to vary the generated massing
-gallery:
-  - src: /images/my-project/01.jpg
-    alt: "Street view at dusk"
-    caption: "Street view"
 credits:
   - role: Principal
     name: Rufus Kerr
@@ -59,7 +56,7 @@ credits:
 Project narrative in Markdown.
 ```
 
-Put images in `public/images/<project>/`. Gallery photos are shown in greyscale to keep the black-and-white look. Remove `filter: grayscale(1)` in `work/[slug].astro` to show them in colour.
+Then drop photos into `images/projects/my-project/`. They're picked up automatically, ordered by filename, captioned from the filename and optimised at build time. See [images/README.md](images/README.md). Photos are shown in greyscale to keep the black-and-white look; remove `filter: grayscale(1)` in `work/[slug].astro` to show them in colour.
 
 ## Before launch
 

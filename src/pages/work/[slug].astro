@@ -1,6 +1,8 @@
 ---
 import { getCollection, render } from 'astro:content';
+import { Picture } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
+import { projectImages } from '../../lib/images';
 
 export async function getStaticPaths() {
   const projects = (await getCollection('projects')).sort((a, b) => a.data.order - b.data.order);
@@ -14,6 +16,11 @@ const { project, index, next } = Astro.props;
 const { Content } = await render(project);
 const d = project.data;
 const num = String(index + 1).padStart(2, '0');
+// Photos dropped in images/projects/<slug>/ come first, then any listed in frontmatter.
+const gallery = [
+  ...projectImages(project.id).map((img) => ({ src: img.src, alt: img.alt || d.title, caption: img.alt })),
+  ...d.gallery,
+];
 const facts = [
   ['Location', d.location],
   ['Year', String(d.year)],
@@ -111,12 +118,22 @@ const sheets = [
 
   <!-- GALLERY (photography / renders) -->
   {
-    d.gallery.length > 0 && (
+    gallery.length > 0 && (
       <section class="p-gallery dark">
         <div class="wrap p-gallery__grid">
-          {d.gallery.map((img, i) => (
+          {gallery.map((img, i) => (
             <figure class:list={['shot', i % 3 === 0 && 'shot--full']} data-reveal>
-              <img src={img.src} alt={img.alt} loading="lazy" decoding="async" />
+              {typeof img.src === 'string' ? (
+                <img src={img.src} alt={img.alt} loading="lazy" decoding="async" />
+              ) : (
+                <Picture
+                  src={img.src}
+                  alt={img.alt}
+                  formats={['avif', 'webp']}
+                  widths={i % 3 === 0 ? [800, 1600, 2400] : [600, 1000, 1400]}
+                  sizes={i % 3 === 0 ? '100vw' : '(max-width: 860px) 100vw, 50vw'}
+                />
+              )}
               {img.caption && <figcaption class="mono">{img.caption}</figcaption>}
             </figure>
           ))}
@@ -362,7 +379,7 @@ const sheets = [
   .shot--full {
     grid-column: 1 / -1;
   }
-  .shot img {
+  .shot :global(img) {
     width: 100%;
     height: auto;
     filter: grayscale(1) contrast(1.08);
