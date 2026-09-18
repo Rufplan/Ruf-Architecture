@@ -34,11 +34,9 @@ const year = new Date().getFullYear();
     </div>
   </div>
 
-  <div class="footer__word" aria-hidden="true">{site.short}</div>
-
   <div class="wrap footer__base mono">
     <span>© {year} {site.name}</span>
-    <a href="#main" class="link">Back to top ↑</a>
+    <span>{site.location}</span>
   </div>
 </footer>
 
@@ -85,19 +83,6 @@ const year = new Date().getFullYear();
   .footer__label {
     color: var(--grey);
     margin-bottom: 10px !important;
-  }
-  .footer__word {
-    font-weight: 900;
-    font-size: 42vw;
-    letter-spacing: -0.065em;
-    line-height: 0.75;
-    white-space: nowrap;
-    text-align: center;
-    margin-top: 40px;
-    color: transparent;
-    -webkit-text-stroke: 1px var(--white);
-    opacity: 0.9;
-    user-select: none;
   }
   .footer__base {
     display: flex;
