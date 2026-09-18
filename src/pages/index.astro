@@ -6,34 +6,18 @@ import ImageReel from '../components/ImageReel.astro';
 import { site } from '../site.config';
 import { Picture } from 'astro:assets';
 import { portrait } from '../lib/images';
-import { getProjects, coverOf } from '../lib/projects';
-import BuildSequence from '../components/BuildSequence.astro';
+import { getProjects } from '../lib/projects';
+import Hero from '../components/Hero.astro';
 
 const portraitImg = portrait();
 const allProjects = await getProjects();
 const projects = allProjects.filter((p) => p.data.featured);
-// Hero: the first featured project with photography, built up from the ground.
-const heroProject = projects.find((p) => coverOf(p)) ?? allProjects.find((p) => coverOf(p));
-const heroCover = heroProject && coverOf(heroProject);
 const statement =
   'We design buildings as instruments of light and shadow — reducing every project to the essential: mass, line, and the space between.';
 ---
 
 <Base>
-  {
-    heroProject && heroCover && (
-      <BuildSequence
-        home
-        light
-        cover={heroCover}
-        alt={`${heroProject.data.title}, ${heroProject.data.location}`}
-        heading={site.short}
-        kicker={`${site.name} — ${site.principal}, ${site.principalTitle}`}
-        tagLeft={site.tagline}
-        tagRight={`Shown: ${heroProject.data.title}`}
-      />
-    )
-  }
+  <Hero projects={allProjects} />
 
   <!-- STATEMENT -->
   <section class="statement paper" data-statement>
