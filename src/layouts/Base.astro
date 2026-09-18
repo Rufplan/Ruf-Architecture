@@ -46,6 +46,7 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
     </main>
     <Footer />
 
+    <button type="button" class="totop mono" data-totop aria-label="Back to top">↑</button>
     <div class="grain" aria-hidden="true"></div>
     <script>
       // Intro loader — once per session.
@@ -80,6 +81,13 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
           }
         };
         requestAnimationFrame(step);
+      }
+
+      // Round back-to-top button, once the first screen is behind you
+      const toTop = document.querySelector<HTMLElement>('[data-totop]');
+      if (toTop) {
+        toTop.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
+        addEventListener('scroll', () => toTop.classList.toggle('is-on', scrollY > innerHeight), { passive: true });
       }
 
       // Scroll reveals
@@ -150,6 +158,37 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
     transform: scaleX(var(--p, 0));
   }
 
+  .totop {
+    position: fixed;
+    right: var(--gutter);
+    bottom: 24px;
+    z-index: 84;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    background: none;
+    color: #fff;
+    mix-blend-mode: difference;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+    transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+    cursor: pointer;
+  }
+  .totop.is-on {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+  .totop:hover {
+    background: #fff;
+    color: #000;
+    mix-blend-mode: normal;
+  }
+
   .grain {
     position: fixed;
     inset: -50%;
@@ -168,7 +207,38 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .grain {
+    .totop {
+    position: fixed;
+    right: var(--gutter);
+    bottom: 24px;
+    z-index: 84;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    background: none;
+    color: #fff;
+    mix-blend-mode: difference;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+    transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
+    cursor: pointer;
+  }
+  .totop.is-on {
+    opacity: 1;
+    pointer-events: auto;
+    transform: none;
+  }
+  .totop:hover {
+    background: #fff;
+    color: #000;
+    mix-blend-mode: normal;
+  }
+
+  .grain {
       animation: none;
     }
   }

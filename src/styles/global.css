@@ -1,12 +1,12 @@
 :root {
-  --black: #050505;
-  --white: #f3f3f0;
-  --grey: #8a8a86;
-  --paper: #efece4;
+  --black: #14120f;
+  --white: #f2efe9;
+  --grey: #8f8a82;
+  --paper: #e8e2d9;
   --accent: #1b46d8;
   --accent-ink: #f3f3f0;
-  --line-dark: rgba(243, 243, 240, 0.18);
-  --line-light: rgba(5, 5, 5, 0.16);
+  --line-dark: rgba(242, 239, 233, 0.2);
+  --line-light: rgba(20, 18, 15, 0.18);
   --gutter: clamp(16px, 3vw, 44px);
   --display: 'Inter Tight', 'Helvetica Neue', Arial, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
@@ -97,6 +97,24 @@ a {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* Small caps label над a long hairline, with an arrow that slides — as on the reference site */
+.alink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  min-width: min(260px, 60vw);
+  padding-bottom: 10px;
+  border-bottom: 1px solid currentColor;
+}
+.alink__arrow {
+  transition: transform 0.5s var(--ease);
+}
+.alink:hover .alink__arrow,
+.alink:focus-visible .alink__arrow {
+  transform: translateX(10px);
 }
 
 /* Underline that draws in on hover */

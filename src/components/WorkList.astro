@@ -21,6 +21,7 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
         >
           <span class="wl__idx mono">{String(i + 1).padStart(2, '0')}</span>
           <span class="wl__title">{p.data.title}</span>
+          <span class="wl__arrow" aria-hidden="true">⟶</span>
           <span class="wl__meta mono">
             <span>{p.data.typology}</span>
             <span>{roleOf(p).firm}</span>
@@ -106,7 +107,7 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
   }
   .wl__row {
     display: grid;
-    grid-template-columns: 60px 1fr auto;
+    grid-template-columns: 60px auto 1fr auto;
     align-items: center;
     gap: 20px;
     padding-block: clamp(18px, 2.4vw, 34px);
@@ -114,6 +115,17 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
   }
   .wl__idx {
     color: color-mix(in srgb, currentColor 55%, transparent);
+  }
+  .wl__arrow {
+    align-self: center;
+    font-size: 20px;
+    opacity: 0;
+    transform: translateX(-16px);
+    transition: opacity 0.5s var(--ease), transform 0.6s var(--ease);
+  }
+  .wl__row:hover .wl__arrow {
+    opacity: 1;
+    transform: none;
   }
   .wl__title {
     font-weight: 800;
@@ -190,6 +202,9 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
     .wl__row {
       grid-template-columns: 40px 1fr;
     }
+    .wl__arrow {
+      display: none;
+    }
     .wl__meta {
       grid-column: 2;
       flex-direction: row;
@@ -215,6 +230,9 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
   @media (max-width: 760px) {
     .wl__row {
       grid-template-columns: 40px 1fr;
+    }
+    .wl__arrow {
+      display: none;
     }
     .wl__meta {
       grid-column: 2;
