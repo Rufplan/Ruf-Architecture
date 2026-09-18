@@ -14,14 +14,17 @@ interface Props {
   alt: string;
   /** Home page variant: larger heading and a shorter scroll. */
   home?: boolean;
+  /** Build on paper instead of black. */
+  light?: boolean;
 }
-const { cover, heading, kicker, tagLeft, tagRight, alt, home = false } = Astro.props;
+const { cover, heading, kicker, tagLeft, tagRight, alt, home = false, light = false } = Astro.props;
 const texture = await getImage({ src: cover.src, width: Math.min(2048, cover.src.width), format: 'webp' });
 const stages = ['Site', 'Structure', 'Enclosure', 'Complete'];
 ---
 
 <section
-  class:list={['seq dark', home && 'seq--home']}
+  class:list={['seq', light ? 'seq--light paper' : 'dark', home && 'seq--home']}
+  data-light={light ? '' : undefined}
   data-sequence
   data-texture={texture.src}
   data-ratio={cover.ratio.toFixed(4)}
@@ -39,7 +42,7 @@ const stages = ['Site', 'Structure', 'Enclosure', 'Complete'];
           fetchpriority="high"
         />
       </div>
-      <div class="seq__scene" data-scene data-cursor="Drag"></div>
+      <div class="seq__scene" data-scene></div>
       <div class="seq__shade" data-shade aria-hidden="true"></div>
 
       {tagLeft && <span class="seq__tag seq__tag--tl mono">{tagLeft}</span>}
@@ -81,7 +84,13 @@ const stages = ['Site', 'Structure', 'Enclosure', 'Complete'];
     const bar = seq.querySelector<HTMLElement>('[data-bar]')!;
     const steps = [...seq.querySelectorAll<HTMLElement>('[data-step]')];
 
-    const assembly = mountAssembly(scene, { src: seq.dataset.texture!, ratio: Number(seq.dataset.ratio) });
+    const light = seq.dataset.light !== undefined;
+    const assembly = mountAssembly(scene, {
+      src: seq.dataset.texture!,
+      ratio: Number(seq.dataset.ratio),
+      fg: light ? 0x1b1b19 : 0xf3f3f0,
+      bg: light ? 0xefece4 : 0x050505,
+    });
 
     const onScroll = () => {
       const r = seq.getBoundingClientRect();
@@ -95,6 +104,7 @@ const stages = ['Site', 'Structure', 'Enclosure', 'Complete'];
       scene.style.opacity = String(1 - done);
       scene.style.pointerEvents = done > 0.5 ? 'none' : '';
       shade.style.opacity = String(range(p, 0.6, 0.95));
+      seq.classList.toggle('is-built', p > 0.72);
       bar.style.transform = `scaleX(${p})`;
     };
     addEventListener('scroll', onScroll, { passive: true });
@@ -217,6 +227,25 @@ const stages = ['Site', 'Structure', 'Enclosure', 'Complete'];
     background: var(--white);
     transform-origin: left;
     transform: scaleX(0);
+  }
+
+  /* Light variant: dark type on paper until the photograph lands */
+  .seq--light .seq__tag,
+  .seq--light .seq__title,
+  .seq--light .seq__steps {
+    color: var(--black);
+    transition: color 0.6s var(--ease);
+  }
+  .seq--light .seq__bar {
+    background: var(--line-light);
+  }
+  .seq--light .seq__bar span {
+    background: var(--accent);
+  }
+  .seq--light.is-built .seq__tag,
+  .seq--light.is-built .seq__title,
+  .seq--light.is-built .seq__steps {
+    color: var(--white);
   }
 
   /* Reduced motion: just the photograph */

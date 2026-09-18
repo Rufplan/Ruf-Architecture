@@ -24,6 +24,7 @@ const statement =
     heroProject && heroCover && (
       <BuildSequence
         home
+        light
         cover={heroCover}
         alt={`${heroProject.data.title}, ${heroProject.data.location}`}
         heading={site.short}
@@ -35,7 +36,7 @@ const statement =
   }
 
   <!-- STATEMENT -->
-  <section class="statement light" data-statement>
+  <section class="statement paper" data-statement>
     <div class="wrap statement__inner">
       <p class="mono statement__kicker">( 01 — Approach )</p>
       <p class="statement__text">
@@ -49,10 +50,10 @@ const statement =
 
   <ImageReel projects={allProjects} />
 
-  <Marquee words={['Mass', 'Light', 'Line', 'Shadow', 'Space']} />
+  <Marquee accent words={['Mass', 'Light', 'Line', 'Shadow', 'Space']} />
 
   <!-- WORK -->
-  <section class="work dark" id="work">
+  <section class="work light" id="work">
     <div class="wrap work__head">
       <p class="mono">( 02 — Selected work )</p>
       <h2 class="work__title">
@@ -62,12 +63,12 @@ const statement =
     </div>
     <WorkList projects={projects} />
     <div class="wrap work__all">
-      <a href="/work/" class="mono link" data-cursor="Index">All {allProjects.length} projects →</a>
+      <a href="/work/" class="mono link">All {allProjects.length} projects →</a>
     </div>
   </section>
 
   <!-- PRINCIPAL -->
-  <section class="principal light">
+  <section class="principal paper">
     <div class="wrap principal__grid">
       <p class="mono principal__kicker">( 03 — Studio )</p>
       <div class="principal__portrait" data-reveal>
@@ -88,7 +89,7 @@ const statement =
         </h2>
         <p class="mono principal__role">{site.principalTitle}, {site.name}</p>
         <p class="principal__bio" data-reveal>{site.bio[0]}</p>
-        <a href="/studio/" class="principal__link mono link" data-cursor="Studio">About the studio →</a>
+        <a href="/studio/" class="principal__link mono link">About the studio →</a>
       </div>
     </div>
   </section>
@@ -103,7 +104,11 @@ const statement =
       const r = statement.getBoundingClientRect();
       const p = Math.min(1, Math.max(0, (innerHeight * 0.85 - r.top) / (r.height * 0.75)));
       const lit = p * words.length;
-      words.forEach((w, i) => w.style.setProperty('--o', String(Math.min(1, Math.max(0.12, lit - i)))));
+      words.forEach((w, i) => {
+        w.style.setProperty('--o', String(Math.min(1, Math.max(0.12, lit - i))));
+        // The last stretch of the sentence picks up the accent colour.
+        w.classList.toggle('is-lit', i >= words.length - 6 && lit - i > 0.8);
+      });
     };
     addEventListener('scroll', update, { passive: true });
     update();
@@ -129,7 +134,10 @@ const statement =
   }
   .word {
     opacity: var(--o, 0.12);
-    transition: opacity 0.25s linear;
+    transition: opacity 0.25s linear, color 0.4s linear;
+  }
+  .word.is-lit {
+    color: var(--accent);
   }
   .statement__foot {
     display: flex;
@@ -138,6 +146,7 @@ const statement =
     margin-top: clamp(60px, 8vw, 120px);
     padding-top: 20px;
     border-top: 1px solid var(--line-light);
+    color: var(--accent);
   }
 
   /* WORK */

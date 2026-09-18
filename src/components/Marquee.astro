@@ -1,12 +1,13 @@
 ---
 interface Props {
   words: string[];
+  accent?: boolean;
 }
-const { words } = Astro.props;
+const { words, accent = false } = Astro.props;
 const run = [...words, ...words];
 ---
 
-<div class="marquee dark" aria-hidden="true">
+<div class:list={['marquee', accent ? 'accent' : 'dark']} aria-hidden="true">
   <div class="marquee__track">
     {
       [0, 1].map(() => (
@@ -26,8 +27,8 @@ const run = [...words, ...words];
 <style>
   .marquee {
     overflow: hidden;
+    border-block: 1px solid transparent;
     padding-block: clamp(28px, 4vw, 60px);
-    border-block: 1px solid var(--line-dark);
   }
   .marquee__track {
     display: flex;
@@ -51,12 +52,12 @@ const run = [...words, ...words];
   }
   .marquee__item.is-outline {
     color: transparent;
-    -webkit-text-stroke: 1px var(--white);
+    -webkit-text-stroke: 1px currentColor;
   }
   .marquee__dot {
     width: 0.16em;
     height: 0.16em;
-    background: var(--white);
+    background: currentColor;
   }
   @keyframes marquee {
     to {

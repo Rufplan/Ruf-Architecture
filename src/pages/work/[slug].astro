@@ -169,7 +169,7 @@ const facts = [
                 {m.kind === 'video' ? (
                   <video src={m.src} muted loop playsinline preload="metadata" data-autoplay aria-label={altFor(m)} />
                 ) : (
-                  <button type="button" class="shot__open" data-open={lightboxIndex(m)} data-cursor="View" aria-label={`Enlarge: ${altFor(m)}`}>
+                  <button type="button" class="shot__open" data-open={lightboxIndex(m)} aria-label={`Enlarge: ${altFor(m)}`}>
                     <Picture
                       src={m.src}
                       alt={altFor(m)}
@@ -189,7 +189,7 @@ const facts = [
   }
 
   <!-- NEXT -->
-  <a href={`/work/${next.id}/`} class:list={['p-next dark', nextCover && 'p-next--image']} data-cursor="Next">
+  <a href={`/work/${next.id}/`} class:list={['p-next dark', nextCover && 'p-next--image']}>
     {nextCover && <img class="p-next__bg" src={nextCover} alt="" loading="lazy" decoding="async" />}
     <span class="wrap p-next__label mono">Next project →</span>
     <span class="wrap p-next__title">{next.data.title}</span>

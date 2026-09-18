@@ -34,6 +34,7 @@ interface Options {
 export function mountAssembly(container: HTMLElement, opts: Options) {
   const slabs = opts.slabs ?? 12;
   const fg = opts.fg ?? 0xf3f3f0;
+  const bg = opts.bg ?? 0x050505;
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -106,7 +107,7 @@ export function mountAssembly(container: HTMLElement, opts: Options) {
 
       // A solid dark slab behind the photo gives the band real thickness when seen at an angle.
       const boxGeo = new THREE.BoxGeometry(w, bandH, depth);
-      const fillMat = new THREE.MeshBasicMaterial({ color: opts.bg ?? 0x050505, transparent: true, opacity: 0 });
+      const fillMat = new THREE.MeshBasicMaterial({ color: bg, transparent: true, opacity: 0 });
       const box = new THREE.Mesh(boxGeo, fillMat);
       const edges = new THREE.EdgesGeometry(boxGeo);
       const lineMat = new THREE.LineBasicMaterial({ color: fg, transparent: true, opacity: 0 });
@@ -195,6 +196,8 @@ export function mountAssembly(container: HTMLElement, opts: Options) {
   const onDown = (e: PointerEvent) => (dragX = e.clientX);
   const onUp = () => (dragX = null);
   const onMove = (e: PointerEvent) => {
+    // Once the image is square-on the pointer no longer moves the camera, so skip the redraw.
+    if (progress > 0.93 && dragX === null) return;
     pointerX = (e.clientX / innerWidth) * 2 - 1;
     pointerY = (e.clientY / innerHeight) * 2 - 1;
     if (dragX !== null) {

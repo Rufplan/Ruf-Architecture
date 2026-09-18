@@ -15,7 +15,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 {
   items.length > 0 && (
-    <section class="reel dark" data-reel aria-label="Projects in pictures">
+    <section class="reel paper" data-reel aria-label="Projects in pictures">
       <div class="reel__sticky">
         <div class="reel__head wrap mono">
           <span>( In pictures )</span>
@@ -38,9 +38,9 @@ const pad = (n: number) => String(n).padStart(2, '0');
           {items.map(({ p, cover }, i) => (
             <a
               href={`/work/${p.id}/`}
-              class="reel__item tone tone-x"
+              class="reel__item"
               style={`--ratio: ${Math.min(Math.max(cover!.ratio, 0.7), 2.1).toFixed(3)}`}
-              data-cursor="View"
+             
             >
               <Picture
                 src={cover!.src}
@@ -137,13 +137,13 @@ const pad = (n: number) => String(n).padStart(2, '0');
     display: flex;
     align-items: center;
     gap: 16px;
-    color: var(--grey);
+    color: #6b6b67;
     padding-top: 60px;
   }
   .reel__rule {
     flex: 1;
     height: 1px;
-    background: var(--line-dark);
+    background: var(--line-light);
   }
   .reel__track {
     display: flex;
@@ -177,7 +177,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
   }
   .reel__hint {
     margin: 0;
-    color: var(--grey);
+    color: var(--accent);
   }
   .reel__item {
     position: relative;
@@ -196,11 +196,10 @@ const pad = (n: number) => String(n).padStart(2, '0');
     object-fit: cover;
   }
   .reel__item :global(img) {
-    transform: scale(1.08);
+    transform: scale(1.06);
+    transition: transform 1.2s var(--ease);
   }
-  .reel__item.is-color :global(img),
   .reel__item:hover :global(img) {
-    filter: none;
     transform: none;
   }
   .reel__meta {
@@ -223,12 +222,12 @@ const pad = (n: number) => String(n).padStart(2, '0');
   .reel__progress {
     margin-inline: var(--gutter);
     height: 1px;
-    background: var(--line-dark);
+    background: var(--line-light);
   }
   .reel__progress span {
     display: block;
     height: 100%;
-    background: var(--white);
+    background: var(--accent);
     transform-origin: left;
     transform: scaleX(0);
   }

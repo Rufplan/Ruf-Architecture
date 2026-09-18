@@ -2,6 +2,9 @@
   --black: #050505;
   --white: #f3f3f0;
   --grey: #8a8a86;
+  --paper: #efece4;
+  --accent: #1b46d8;
+  --accent-ink: #f3f3f0;
   --line-dark: rgba(243, 243, 240, 0.18);
   --line-light: rgba(5, 5, 5, 0.16);
   --gutter: clamp(16px, 3vw, 44px);
@@ -69,6 +72,17 @@ a {
 .light {
   background: var(--white);
   color: var(--black);
+}
+
+/* Warm paper and a signal-blue band break up the black */
+.paper {
+  background: var(--paper);
+  color: var(--black);
+}
+
+.accent {
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 
 .dark {

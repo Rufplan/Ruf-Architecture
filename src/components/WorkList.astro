@@ -15,7 +15,7 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
         <a
           href={`/work/${p.id}/`}
           class="wl__row wrap"
-          data-cursor="View"
+         
           data-title={p.data.title}
           data-image={thumbs[i]}
         >
@@ -99,10 +99,10 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
     list-style: none;
     margin: 0;
     padding: 0;
-    border-top: 1px solid var(--line-dark);
+    border-top: 1px solid color-mix(in srgb, currentColor 20%, transparent);
   }
   .wl li {
-    border-bottom: 1px solid var(--line-dark);
+    border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent);
   }
   .wl__row {
     display: grid;
@@ -113,7 +113,7 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
     transition: opacity 0.5s var(--ease), background-color 0.5s var(--ease);
   }
   .wl__idx {
-    color: var(--grey);
+    color: color-mix(in srgb, currentColor 55%, transparent);
   }
   .wl__title {
     font-weight: 800;
@@ -128,7 +128,7 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
     align-items: flex-end;
     gap: 2px;
     text-align: right;
-    color: var(--grey);
+    color: color-mix(in srgb, currentColor 55%, transparent);
   }
   .wl__thumb {
     display: none;
@@ -203,7 +203,7 @@ const thumbs = await Promise.all(projects.map((p) => coverThumb(p, 900)));
       grid-column: 1 / -1;
       width: 100%;
       aspect-ratio: 16 / 10;
-      border: 1px solid var(--line-dark);
+      border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
       overflow: hidden;
     }
     .wl__thumb img {

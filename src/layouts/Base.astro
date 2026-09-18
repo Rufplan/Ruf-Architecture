@@ -47,9 +47,6 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
     <Footer />
 
     <div class="grain" aria-hidden="true"></div>
-    <div class="cursor" aria-hidden="true"></div>
-    <div class="cursor cursor__label mono" aria-hidden="true"></div>
-
     <script>
       // Intro loader — once per session.
       const loader = document.querySelector<HTMLElement>('.loader');
@@ -106,35 +103,6 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
       );
       document.querySelectorAll('.tone:not(.tone-x)').forEach((el) => tone.observe(el));
 
-      // Custom cursor (fine pointers only)
-      const cursor = document.querySelector<HTMLElement>('.cursor');
-      const label = document.querySelector<HTMLElement>('.cursor__label');
-      if (cursor && label && matchMedia('(pointer: fine)').matches) {
-        let x = innerWidth / 2, y = innerHeight / 2, cx = x, cy = y;
-        addEventListener('pointermove', (e) => {
-          x = e.clientX;
-          y = e.clientY;
-          cursor.classList.add('is-on');
-          label.classList.add('is-on');
-          const t = (e.target as HTMLElement).closest<HTMLElement>('a, button, [data-cursor]');
-          cursor.classList.toggle('is-hover', !!t);
-          const text = t?.dataset.cursor ?? '';
-          label.textContent = text;
-          cursor.classList.toggle('has-label', !!text);
-          label.classList.toggle('has-label', !!text);
-        }, { passive: true });
-        document.addEventListener('pointerleave', () => {
-          cursor.classList.remove('is-on');
-          label.classList.remove('is-on');
-        });
-        const follow = () => {
-          cx += (x - cx) * 0.2;
-          cy += (y - cy) * 0.2;
-          cursor.style.transform = label.style.transform = `translate3d(${cx}px, ${cy}px, 0)`;
-          requestAnimationFrame(follow);
-        };
-        follow();
-      }
     </script>
   </body>
 </html>
@@ -197,52 +165,6 @@ const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : un
     50% { transform: translate(2%, -3%); }
     75% { transform: translate(-2%, -1%); }
     100% { transform: translate(0, 0); }
-  }
-
-  .cursor {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 95;
-    pointer-events: none;
-    mix-blend-mode: difference;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .cursor.is-on {
-    opacity: 1;
-  }
-  .cursor:not(.cursor__label)::before {
-    content: '';
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    margin: -6px 0 0 -6px;
-    border-radius: 50%;
-    background: #fff;
-    transition: transform 0.5s var(--ease);
-  }
-  .cursor.is-hover::before {
-    transform: scale(3.5);
-  }
-  .cursor.has-label::before {
-    transform: scale(7.5);
-  }
-  .cursor__label {
-    color: #fff;
-    white-space: nowrap;
-    translate: -50% -50%;
-  }
-  .cursor__label:not(.has-label) {
-    opacity: 0 !important;
-  }
-
-  @media (pointer: fine) {
-    html,
-    a,
-    button {
-      cursor: none;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

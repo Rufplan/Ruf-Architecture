@@ -39,7 +39,7 @@ const typologies = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([t]) =
             href={`/work/${p.id}/`}
             class="card"
             data-reveal
-            data-cursor="Open"
+           
             data-typology={p.data.typology}
           >
             <div class:list={['card__media', covers[i] && 'card__media--photo tone']}>
