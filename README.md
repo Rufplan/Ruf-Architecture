@@ -56,7 +56,7 @@ Optional project narrative in Markdown. The role description from experience.ts 
 
 ## Before launch
 
-- Contact email and phone in `src/site.config.ts` are placeholders; the domain in `astro.config.mjs` is a guess.
+- The domain in `astro.config.mjs` (`rufarchitecture.com`) is a guess — set it to the real one before launch.
 - Add photos and a portrait (`images/studio/portrait.jpg`).
 - Projects are credited to the firm and role they were done under.
 ## Deploy
